@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from chromosome import (
+from genetic_algorithm.chromosome import (
     chromosome_to_gait,
     NUM_FRAMES,
     ANGLES_PER_FRAME,
