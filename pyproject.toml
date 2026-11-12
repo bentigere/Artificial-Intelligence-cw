@@ -7,7 +7,9 @@ authors = [
     { name = "Kurei999999", email = "krain.ss@icloud.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "numpy>=2.5.4",
+]
 
 [project.scripts]
 artificial-intelligence-cw = "artificial_intelligence_cw:main"
@@ -15,3 +17,6 @@ artificial-intelligence-cw = "artificial_intelligence_cw:main"
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = false

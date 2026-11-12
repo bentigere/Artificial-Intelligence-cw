@@ -15,8 +15,15 @@ POPULATION_SIZE = 20
 RIGHT_POSE = [0.0, 1.07, -0.58]
 LEFT_POSE = [0.0, -1.07, 0.58]
 
+# MATLAB reference pose, shared by all eight legs
+# coxa: 0, femur: -45, tibia: -60
+MATLAB_REFERENCE_POSE = [0.0, -np.pi / 4, -np.pi / 3]
+
 # Required leg order: L1 L2 L3 L4 R4 R3 R2 R1
 STANDING_POSE = np.array(LEFT_POSE * 4 + RIGHT_POSE * 4)
+
+# 24 angles in the required leg order
+MATLAB_STANDING_POSE = np.tile(MATLAB_REFERENCE_POSE, 8)
 
 # Alternate the leg movement phases
 LEG_PHASES = [0, np.pi] * 4
@@ -36,7 +43,7 @@ def create_smooth_chromosome(rng):
     time = np.linspace(0, 2 * np.pi, NUM_FRAMES, endpoint=False)
 
     # Start every frame at the standing position
-    gait = np.tile(STANDING_POSE, (NUM_FRAMES, 1))
+    gait = np.tile(MATLAB_STANDING_POSE, (NUM_FRAMES, 1))
 
     # Add small periodic movements to each leg
     for leg in range(8):

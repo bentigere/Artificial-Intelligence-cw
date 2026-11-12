@@ -77,12 +77,13 @@ def forward_leg_kinematics2(base_pos, base_angle, joint_angles, segment_lengths)
     return j1, j2, j3, j4
 
 
-j1, j2, j3, j4 = forward_leg_kinematics2(
-    base_pos=[0, 0, 0],
-    base_angle=0,
-    joint_angles=[0, 0, 0],
-    segment_lengths=[1, 1, 1],
-)
+if __name__ == "__main__":
+    j1, j2, j3, j4 = forward_leg_kinematics2(
+        base_pos=[0, 0, 0],
+        base_angle=0,
+        joint_angles=[0, 0, 0],
+        segment_lengths=[1, 1, 1],
+    )
 
-for name, position in zip(["j1", "j2", "j3", "j4"], [j1, j2, j3, j4]):
-    print(name, np.round(position, 4))
+    for name, position in zip(["j1", "j2", "j3", "j4"], [j1, j2, j3, j4]):
+        print(name, np.round(position, 4))
