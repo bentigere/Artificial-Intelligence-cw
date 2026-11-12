@@ -1,4 +1,6 @@
-angles = readmatrix('data/random_gait.csv');
+
+% csv data file
+angles = readmatrix('data/spider_gait.csv');
 
 for frame = 1:size(angles, 1)
     plot_spider_pose(angles(frame, :));

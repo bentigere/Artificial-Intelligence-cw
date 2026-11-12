@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from genetic_algorithm.chromosome import (
@@ -6,7 +5,7 @@ from genetic_algorithm.chromosome import (
     NUM_FRAMES,
     ANGLES_PER_FRAME,
     LOWER_LIMITS,
-    UPPER_LIMITS
+    UPPER_LIMITS,
 )
 
 POPULATION_SIZE = 20
@@ -16,10 +15,15 @@ POPULATION_SIZE = 20
 RIGHT_POSE = [0.0, 1.07, -0.58]
 LEFT_POSE = [0.0, -1.07, 0.58]
 
+# MATLAB reference pose, shared by all eight legs
+# coxa: 0, femur: -45, tibia: -60
+MATLAB_REFERENCE_POSE = [0.0, -np.pi / 4, -np.pi / 3]
+
 # Required leg order: L1 L2 L3 L4 R4 R3 R2 R1
-STANDING_POSE = np.array(
-    LEFT_POSE * 4 + RIGHT_POSE * 4
-)
+STANDING_POSE = np.array(LEFT_POSE * 4 + RIGHT_POSE * 4)
+
+# 24 angles in the required leg order
+MATLAB_STANDING_POSE = np.tile(MATLAB_REFERENCE_POSE, 8)
 
 # Alternate the leg movement phases
 LEG_PHASES = [0, np.pi] * 4
@@ -36,14 +40,10 @@ def create_smooth_chromosome(rng):
     """
 
     # Time values covering one walking cycle
-    time = np.linspace(
-        0, 2 * np.pi,
-        NUM_FRAMES,
-        endpoint=False
-    )
+    time = np.linspace(0, 2 * np.pi, NUM_FRAMES, endpoint=False)
 
     # Start every frame at the standing position
-    gait = np.tile(STANDING_POSE, (NUM_FRAMES, 1))
+    gait = np.tile(MATLAB_STANDING_POSE, (NUM_FRAMES, 1))
 
     # Add small periodic movements to each leg
     for leg in range(8):
@@ -57,16 +57,10 @@ def create_smooth_chromosome(rng):
             amplitude = rng.uniform(0.03, 0.10)
 
             # Smooth movement around standing angle
-            gait[:, start + joint] += (
-                amplitude * np.sin(time + phase)
-            )
+            gait[:, start + joint] += amplitude * np.sin(time + phase)
 
     # Keep all angles within the motor limits
-    gait = np.clip(
-        gait,
-        LOWER_LIMITS + 0.001,
-        UPPER_LIMITS - 0.001
-    )
+    gait = np.clip(gait, LOWER_LIMITS + 0.001, UPPER_LIMITS - 0.001)
 
     # Convert the 300 x 24 gait into 7200 genes
     return gait.flatten()
@@ -101,18 +95,13 @@ if __name__ == "__main__":
     # Measure the largest change between consecutive frames
     changes = np.diff(first_gait, axis=0)
 
-    print(
-        "Maximum joint change between frames:",
-        np.max(np.abs(changes))
-    )
+    print("Maximum joint change between frames:", np.max(np.abs(changes)))
 
     print(
         "All angles within limits:",
-        bool(np.all(first_gait >= LOWER_LIMITS)
-             and np.all(first_gait <= UPPER_LIMITS))
+        bool(np.all(first_gait >= LOWER_LIMITS) and np.all(first_gait <= UPPER_LIMITS)),
     )
 
     print(
-        "First two chromosomes identical:",
-        np.array_equal(population[0], population[1])
+        "First two chromosomes identical:", np.array_equal(population[0], population[1])
     )
