@@ -18,19 +18,78 @@ def create_chromosome():
     return [random.uniform(low, high) for low, high in BOUNDS]
 
 
-def gait_fitness(chromosome):
-    """PROTOTYPE heuristic: smoothness + movement + joint-angle bounds.
 
-    This is NOT a physical walking/stability score. Replace or extend it
-    using foot contacts, support, collision and displacement in simulation.
-    """
+def gait_fitness(chromosome):
+    """Evaluate a candidate gait using heuristic penalties."""
+
     poses = generate_gait(chromosome)
-    # Reward modest swing and knee movement; penalize abrupt joint changes.
-    motion = sum(abs(poses[i][0] - poses[i - 1][0]) for i in range(1, len(poses)))
-    motion += sum(abs(poses[i][2] - poses[i - 1][2]) for i in range(1, len(poses)))
-    jerk = sum((poses[i][j] - 2 * poses[i - 1][j] + poses[i - 2][j]) ** 2
-               for i in range(2, len(poses)) for j in range(24))
-    return motion / (1.0 + 10.0 * jerk)
+    n = len(poses)
+
+    # 1. Movement reward: encourage controlled yaw movement.
+    movement = 0.0
+    for pose in poses:
+        movement += sum(abs(pose[j]) for j in range(0, 24, 3))
+    movement /= n * 8
+
+    # 2. Smoothness penalty: discourage sudden joint changes.
+    # Include the wraparound between the last and first frames.
+    smoothness = 0.0
+    for i in range(n):
+        previous = poses[(i - 1) % n]
+        current = poses[i]
+        following = poses[(i + 1) % n]
+
+        for j in range(24):
+            acceleration = (
+                following[j] - 2 * current[j] + previous[j]
+            )
+            smoothness += acceleration ** 2
+
+    smoothness /= n * 24
+
+    # 3. Joint-limit penalty: penalise angles outside
+    # provisional joint limits (radians).
+    joint_limits = [
+        (-0.8, 0.8),    # yaw
+        (-0.7, 0.7),    # femur
+        (-1.4, 0.2)     # tibia
+    ]
+
+    joint_penalty = 0.0
+
+    for pose in poses:
+        for j, angle in enumerate(pose):
+            low, high = joint_limits[j % 3]
+
+            if angle < low:
+                joint_penalty += (low - angle) ** 2
+            elif angle > high:
+                joint_penalty += (angle - high) ** 2
+
+    joint_penalty /= n * 24
+
+    # 4. Coordination penalty: opposite-phase legs
+    # should move in opposite yaw directions.
+    coordination_penalty = 0.0
+
+    for pose in poses:
+        for leg in range(0, 8, 2):
+            yaw_a = pose[leg * 3]
+            yaw_b = pose[(leg + 1) * 3]
+            coordination_penalty += (yaw_a + yaw_b) ** 2
+
+    coordination_penalty /= n * 4
+
+    # Final weighted fitness.
+    fitness = (
+        5.0 * movement
+        - 10.0 * smoothness
+        - 5.0 * joint_penalty
+        - 2.0 * coordination_penalty
+    )
+
+    return fitness
+
 
 
 def tournament_selection(scored, size=3):
