@@ -6,3 +6,16 @@ j1: the attachment point of the leg to the body.
 j2: the connection between the coxa and femur.
 j3: the connection between the femur and tibia.
 j4: the foot tip.
+
+## run GA
+
+1. every time run GA, change the output csv file path
+
+```terminal
+python test/ga.py
+```
+
+## animate spider model
+
+1. run the main.m file through Matlab
+   - change the csv file path
