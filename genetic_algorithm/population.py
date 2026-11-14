@@ -43,7 +43,7 @@ def create_smooth_chromosome(rng):
     time = np.linspace(0, 2 * np.pi, NUM_FRAMES, endpoint=False)
 
     # Start every frame at the standing position
-    gait = np.tile(MATLAB_STANDING_POSE, (NUM_FRAMES, 1))
+    gait = np.tile(STANDING_POSE, (NUM_FRAMES, 1))
 
     # Add small periodic movements to each leg
     for leg in range(8):

@@ -27,8 +27,11 @@ for leg in LEGS:
     for joint in JOINTS:
         name = f"{leg}_{joint}"
         motor = robot.getDevice(name)
+
         if motor is None:
             raise RuntimeError(f"Motor not found: {name}")
+
+        motor.setVelocity(1.5)
         motors.append(motor)
 
 print(f"Found {len(motors)} motors", flush=True)
