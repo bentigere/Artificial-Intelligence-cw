@@ -1,10 +1,13 @@
-
 import random
 
 
-def mutate(chromosome, mutation_rate=0.01,
-           mutation_strength=0.1,
-           min_angle=-3.14, max_angle=3.14):
+def mutate(
+    chromosome,
+    mutation_rate=0.01,
+    mutation_strength=0.1,
+    min_angle=-3.14,
+    max_angle=3.14,
+):
     """
     Apply random mutations to a chromosome.
 
