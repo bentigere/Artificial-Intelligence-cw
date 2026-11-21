@@ -101,25 +101,24 @@ for step in range(TRANSITION_STEPS):
     if robot.step(TIME_STEP) == -1:
         raise SystemExit
 
-# Record starting GPS position
-
-# Record starting GPS position
+# Record initial GPS position
 start_position = list(gps.getValues())
+start_time = robot.getTime()
 
-print("Starting gait playback", flush=True)
+print("Starting GA gait evaluation", flush=True)
 print("Starting position:", start_position, flush=True)
 
-# Save results beside this controller
+# Results file
 results_path = Path(__file__).with_name("gait_results.csv")
 
-# Test three complete gait cycles
 NUM_CYCLES = 3
 total_frames = len(gait) * NUM_CYCLES
+
+height_samples = []
 
 with open(results_path, "w", newline="") as file:
     writer = csv.writer(file)
 
-    # CSV column headings
     writer.writerow([
         "time_s",
         "cycle",
@@ -129,35 +128,39 @@ with open(results_path, "w", newline="") as file:
         "z_m",
         "dx_m",
         "dy_m",
-        "displacement_m"
+        "displacement_m",
+        "height_change_m"
     ])
 
     for step in range(total_frames):
         frame_number = step % len(gait)
         cycle_number = step // len(gait) + 1
 
-        # Command the next gait frame
+        # Apply the selected gait frame
         apply_pose(gait[frame_number])
 
-        # Advance the simulation
         for _ in range(STEPS_PER_FRAME):
             if robot.step(TIME_STEP) == -1:
                 raise SystemExit
 
-        # Read the GPS position
-        position = gps.getValues()
-        x, y, z = position
+        # Read GPS measurements
+        x, y, z = gps.getValues()
 
-        # Movement relative to starting position
+        # Signed movement along each horizontal axis
         dx = x - start_position[0]
         dy = y - start_position[1]
 
-        # Horizontal displacement
-        displacement = (dx**2 + dy**2) ** 0.5
+        # Total horizontal displacement
+        displacement = (dx**2 + dy**2)**0.5
 
-        # Save the measurements
+        # Vertical change relative to start
+        height_change = z - start_position[2]
+        height_samples.append(z)
+
+        elapsed_time = robot.getTime() - start_time
+
         writer.writerow([
-            round(robot.getTime(), 4),
+            elapsed_time,
             cycle_number,
             frame_number + 1,
             x,
@@ -165,22 +168,38 @@ with open(results_path, "w", newline="") as file:
             z,
             dx,
             dy,
-            displacement
+            displacement,
+            height_change
         ])
 
-        # Print progress every 50 frames
         if frame_number % 50 == 0:
             print(
                 f"Cycle {cycle_number} | "
                 f"Frame {frame_number + 1}/300 | "
-                f"Displacement: {displacement:.3f} m | "
+                f"X: {dx:.3f} m | "
+                f"Y: {dy:.3f} m | "
                 f"Height: {z:.3f} m",
                 flush=True
             )
 
-print(f"Finished {NUM_CYCLES} gait cycles", flush=True)
+# Calculate stability statistics
+average_height = sum(height_samples) / len(height_samples)
+
+height_variation = (
+    sum(
+        (height - average_height)**2
+        for height in height_samples
+    ) / len(height_samples)
+)**0.5
+
+print("\n===== GA GAIT EVALUATION =====", flush=True)
+print(f"Final X displacement: {dx:.4f} m", flush=True)
+print(f"Final Y displacement: {dy:.4f} m", flush=True)
+print(f"Final horizontal displacement: {displacement:.4f} m", flush=True)
+print(f"Average body height: {average_height:.4f} m", flush=True)
+print(f"Height standard deviation: {height_variation:.4f} m", flush=True)
 print(f"Results saved to: {results_path}", flush=True)
 
-# Keep the controller running after recording
+# Keep the controller running
 while robot.step(TIME_STEP) != -1:
     pass
