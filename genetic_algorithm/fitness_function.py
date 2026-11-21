@@ -254,18 +254,24 @@ def fitness_function(chromosome, ground_z):
 
     smoothness = smoothness_penalty(gait)
 
-    swing = swing_clearance_penalty(foot_positions, ground_z, schedule)
+    swing = swing_clearance_penalty(foot_positions, ground_z, schedule, clearance=0.15)
 
-    target_x = create_horizontal_targets(schedule, step_length=1.5)
+    target_x = create_horizontal_targets(schedule, step_length=0.8)
 
     horizontal = horizontal_movement_penalty(foot_positions, target_x)
 
-    # random weights
+    # Acceptable position errors, in the same units as foot coordinates.
+    support_tolerance = 0.03
+    penetration_tolerance = 0.01
+    swing_tolerance = 0.02
+    horizontal_tolerance = 0.05
+
+    # Each position penalty is already a mean squared error.
     total_penalty = (
-        1.0 * support
-        + 1.0 * swing
-        + 1.0 * horizontal
-        + 2.0 * penetration
+        1.0 * support / support_tolerance**2
+        + 1.0 * swing / swing_tolerance**2
+        + 1.0 * horizontal / horizontal_tolerance**2
+        + 2.0 * penetration / penetration_tolerance**2
         + 0.1 * smoothness
     )
 
