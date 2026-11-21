@@ -19,8 +19,6 @@ from genetic_algorithm.fitness_function import (
 from genetic_algorithm.updated_crossover import updated_crossover
 from genetic_algorithm.updated_mutation import updated_mutate
 from genetic_algorithm.selection import tournament_selection
-from genetic_algorithm.crossover import crossover
-from genetic_algorithm.mutation import mutate
 from genetic_algorithm.visualisation import plot_fitness
 
 POPULATION_SIZE = 20
@@ -117,7 +115,7 @@ def main():
     output_dir = Path(__file__).resolve().parent.parent / "data"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    gait_path = output_dir / "best_gait.csv"
+    gait_path = output_dir / "best_gait_matlab.csv"
     np.savetxt(
         gait_path,
         chromosome_to_gait(best_chromosome),

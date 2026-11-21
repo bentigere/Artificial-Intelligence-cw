@@ -38,8 +38,9 @@ def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
     if reference_pose.shape != (ANGLES_PER_FRAME,):
         raise ValueError("Reference pose must contain 24 angles")
 
-    # Start from the selected reference pose
-    gait = np.tile(reference_pose, (NUM_FRAMES, 1))
+    # Start every frame at the standing position
+    gait = np.tile(MATLAB_STANDING_POSE, (NUM_FRAMES, 1))
+
 
     # Add smooth periodic joint movements
     for leg in range(8):
