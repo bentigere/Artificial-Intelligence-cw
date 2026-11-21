@@ -23,38 +23,91 @@ STANDING_POSE = np.array(LEFT_POSE * 4 + RIGHT_POSE * 4)
 MATLAB_STANDING_POSE = np.tile(MATLAB_REFERENCE_POSE, 8)
 
 # Alternating leg phases
-LEG_PHASES = [0, np.pi] * 4
+
+# Required spider leg order
+LEGS = [
+    "L1", "L2", "L3", "L4",
+    "R4", "R3", "R2", "R1"
+]
+
+# Two alternating groups of four legs
+GROUP_A = {"L1", "L3", "R4", "R2"}
+GROUP_B = {"L2", "L4", "R3", "R1"}
+
+# Opposite movement phases
+LEG_PHASES = [
+    0.0 if leg in GROUP_A else np.pi
+    for leg in LEGS
+]
 
 
-def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
-    """Create a smooth 300-frame gait with 7200 genes."""
+def create_smooth_chromosome(
+    rng,
+    reference_pose=STANDING_POSE
+):
+    """
+    Generate a coordinated 300-frame spider gait.
 
-    time = np.linspace(
-        0, 2 * np.pi, NUM_FRAMES, endpoint=False
+    Each chromosome contains 7200 joint angles.
+    Alternating leg groups use opposite phases.
+    """
+
+    reference_pose = np.asarray(
+        reference_pose,
+        dtype=float
     )
 
-    reference_pose = np.asarray(reference_pose, dtype=float)
-
     if reference_pose.shape != (ANGLES_PER_FRAME,):
-        raise ValueError("Reference pose must contain 24 angles")
+        raise ValueError("Expected 24 reference joint angles")
 
-    # Start every frame at the standing position
-    gait = np.tile(MATLAB_STANDING_POSE, (NUM_FRAMES, 1))
+    # One complete periodic gait cycle
+    time = np.linspace(
+        0,
+        2 * np.pi,
+        NUM_FRAMES,
+        endpoint=False
+    )
 
+    # Start from the chosen standing pose
+    gait = np.tile(
+        reference_pose,
+        (NUM_FRAMES, 1)
+    )
 
-    # Add smooth periodic joint movements
     for leg in range(8):
+
         phase = LEG_PHASES[leg]
         start = leg * 3
 
-        for joint in range(3):
-            amplitude = rng.uniform(0.03, 0.10)
+        # Small variations between chromosomes
+        hip_amplitude = rng.uniform(0.10, 0.20)
+        thigh_amplitude = rng.uniform(0.08, 0.16)
+        knee_amplitude = rng.uniform(0.06, 0.12)
 
-            gait[:, start + joint] += (
-                amplitude * np.sin(time + phase)
+        cycle = time + phase
+
+        # Coxa: horizontal sweep
+        hip_movement = (
+            hip_amplitude * np.cos(cycle)
+        )
+
+        # Femur: candidate lifting motion
+        thigh_movement = (
+            thigh_amplitude * np.sin(cycle)
+        )
+
+        # Tibia: offset from femur motion
+        knee_movement = (
+            knee_amplitude * np.sin(
+                cycle - np.pi / 4
             )
+        )
 
-    # Enforce joint limits
+        gait[:, start] += hip_movement
+        gait[:, start + 1] += thigh_movement
+        gait[:, start + 2] += knee_movement
+
+    # Respect robot joint limits
     gait = np.clip(
         gait,
         LOWER_LIMITS + 0.001,
@@ -62,6 +115,7 @@ def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
     )
 
     return gait.flatten()
+
 
 
 def create_population(
