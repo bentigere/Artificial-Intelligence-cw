@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from genetic_algorithm.chromosome import (
@@ -25,26 +24,17 @@ MATLAB_STANDING_POSE = np.tile(MATLAB_REFERENCE_POSE, 8)
 # Alternating leg phases
 
 # Required spider leg order
-LEGS = [
-    "L1", "L2", "L3", "L4",
-    "R4", "R3", "R2", "R1"
-]
+LEGS = ["L1", "L2", "L3", "L4", "R4", "R3", "R2", "R1"]
 
 # Two alternating groups of four legs
 GROUP_A = {"L1", "L3", "R4", "R2"}
 GROUP_B = {"L2", "L4", "R3", "R1"}
 
 # Opposite movement phases
-LEG_PHASES = [
-    0.0 if leg in GROUP_A else np.pi
-    for leg in LEGS
-]
+LEG_PHASES = [0.0 if leg in GROUP_A else np.pi for leg in LEGS]
 
 
-def create_smooth_chromosome(
-    rng,
-    reference_pose=STANDING_POSE
-):
+def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
     """
     Generate a coordinated 300-frame spider gait.
 
@@ -52,27 +42,16 @@ def create_smooth_chromosome(
     Alternating leg groups use opposite phases.
     """
 
-    reference_pose = np.asarray(
-        reference_pose,
-        dtype=float
-    )
+    reference_pose = np.asarray(reference_pose, dtype=float)
 
     if reference_pose.shape != (ANGLES_PER_FRAME,):
         raise ValueError("Expected 24 reference joint angles")
 
     # One complete periodic gait cycle
-    time = np.linspace(
-        0,
-        2 * np.pi,
-        NUM_FRAMES,
-        endpoint=False
-    )
+    time = np.linspace(0, 2 * np.pi, NUM_FRAMES, endpoint=False)
 
     # Start from the chosen standing pose
-    gait = np.tile(
-        reference_pose,
-        (NUM_FRAMES, 1)
-    )
+    gait = np.tile(reference_pose, (NUM_FRAMES, 1))
 
     for leg in range(8):
 
@@ -87,41 +66,25 @@ def create_smooth_chromosome(
         cycle = time + phase
 
         # Coxa: horizontal sweep
-        hip_movement = (
-            hip_amplitude * np.cos(cycle)
-        )
+        hip_movement = hip_amplitude * np.cos(cycle)
 
         # Femur: candidate lifting motion
-        thigh_movement = (
-            thigh_amplitude * np.sin(cycle)
-        )
+        thigh_movement = thigh_amplitude * np.sin(cycle)
 
         # Tibia: offset from femur motion
-        knee_movement = (
-            knee_amplitude * np.sin(
-                cycle - np.pi / 4
-            )
-        )
+        knee_movement = knee_amplitude * np.sin(cycle - np.pi / 4)
 
         gait[:, start] += hip_movement
         gait[:, start + 1] += thigh_movement
         gait[:, start + 2] += knee_movement
 
     # Respect robot joint limits
-    gait = np.clip(
-        gait,
-        LOWER_LIMITS + 0.001,
-        UPPER_LIMITS - 0.001
-    )
+    gait = np.clip(gait, LOWER_LIMITS + 0.001, UPPER_LIMITS - 0.001)
 
     return gait.flatten()
 
 
-
-def create_population(
-    size=POPULATION_SIZE,
-    reference_pose=STANDING_POSE
-):
+def create_population(size=POPULATION_SIZE, reference_pose=STANDING_POSE):
     """Create smooth candidate gaits for MATLAB or Webots."""
 
     rng = np.random.default_rng(42)
@@ -129,10 +92,7 @@ def create_population(
     population = []
 
     for _ in range(size):
-        chromosome = create_smooth_chromosome(
-            rng,
-            reference_pose=reference_pose
-        )
+        chromosome = create_smooth_chromosome(rng, reference_pose=reference_pose)
 
         population.append(chromosome)
 
@@ -142,9 +102,7 @@ def create_population(
 if __name__ == "__main__":
 
     # Test MATLAB population initialization
-    population = create_population(
-        reference_pose=MATLAB_STANDING_POSE
-    )
+    population = create_population(reference_pose=MATLAB_STANDING_POSE)
 
     first_gait = chromosome_to_gait(population[0])
 
@@ -154,15 +112,9 @@ if __name__ == "__main__":
 
     changes = np.diff(first_gait, axis=0)
 
-    print(
-        "Maximum joint change:",
-        np.max(np.abs(changes))
-    )
+    print("Maximum joint change:", np.max(np.abs(changes)))
 
     print(
         "All angles within limits:",
-        bool(
-            np.all(first_gait >= LOWER_LIMITS)
-            and np.all(first_gait <= UPPER_LIMITS)
-        )
+        bool(np.all(first_gait >= LOWER_LIMITS) and np.all(first_gait <= UPPER_LIMITS)),
     )
