@@ -10,7 +10,7 @@ import math
 import random
 
 
-def load_datasets(file_path="data/best_ga_gait.csv"):
+def load_datasets(file_path="data/best_gait_matlab.csv"):
     # Read the gait data from the CSV file
     with open(file_path, "r") as file:
         reader = csv.reader(file)
