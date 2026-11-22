@@ -76,3 +76,66 @@ class NeuralNetwork:
             raise ValueError("Prediction and target shapes differ")
 
         return float(np.mean((predictions - targets) ** 2))
+
+    
+    def predict(self, X):
+        """Generate predictions for a batch of inputs."""
+        return self.forward(X)
+
+    def train_batch(self, X, y, learning_rate):
+        """Train one mini-batch using manual backpropagation."""
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        if X.ndim != 2 or X.shape[1] != 2:
+            raise ValueError("X must have shape (batch_size, 2)")
+        if y.shape != (X.shape[0], 24):
+            raise ValueError("y must have shape (batch_size, 24)")
+        if X.shape[0] == 0:
+            raise ValueError("Batch cannot be empty")
+        if not np.isfinite(X).all() or not np.isfinite(y).all():
+            raise ValueError("Inputs and targets must be finite")
+        if learning_rate <= 0 or not np.isfinite(learning_rate):
+            raise ValueError("Learning rate must be positive and finite")
+
+        # Forward propagation: cache activations and pre-activations.
+        activations = [X]
+        pre_activations = []
+        activation = X
+
+        for layer in range(len(self.weights)):
+            z = activation @ self.weights[layer] + self.biases[layer]
+            pre_activations.append(z)
+
+            if layer < len(self.weights) - 1:
+                activation = np.maximum(0, z)
+            else:
+                activation = z
+
+            activations.append(activation)
+
+        predictions = activations[-1]
+        loss = self.mse_loss(predictions, y)
+
+        # Derivative of mean squared error.
+        delta = 2.0 * (predictions - y) / y.size
+
+        grad_weights = [None] * len(self.weights)
+        grad_biases = [None] * len(self.biases)
+
+        # Backpropagation through all layers.
+        for layer in reversed(range(len(self.weights))):
+            grad_weights[layer] = activations[layer].T @ delta
+            grad_biases[layer] = np.sum(delta, axis=0)
+
+            if layer > 0:
+                delta = delta @ self.weights[layer].T
+                delta *= (pre_activations[layer - 1] > 0)
+
+        # Gradient descent parameter updates.
+        for layer in range(len(self.weights)):
+            self.weights[layer] -= learning_rate * grad_weights[layer]
+            self.biases[layer] -= learning_rate * grad_biases[layer]
+
+        return loss
+
