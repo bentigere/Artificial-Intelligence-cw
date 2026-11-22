@@ -8,7 +8,12 @@ divides datasets into train, validation, and test
 import csv
 import math
 import random
+import numpy as np
 
+from genetic_algorithm.chromosome import (
+    LOWER_LIMITS,
+    UPPER_LIMITS,
+)
 
 def load_datasets(file_path="data/best_gait_matlab.csv"):
     # Read the gait data from the CSV file
@@ -30,6 +35,18 @@ def load_datasets(file_path="data/best_gait_matlab.csv"):
     for frame in gait:
         if len(frame) != 24:
             raise ValueError("Each frame must contain 24 angles")
+
+# Validate numerical values and joint limits
+    gait_array = np.asarray(gait, dtype=float)
+
+    if not np.isfinite(gait_array).all():
+        raise ValueError("Gait contains NaN or infinite values")
+
+    if (
+    np.any(gait_array < LOWER_LIMITS)
+    or np.any(gait_array > UPPER_LIMITS)
+    ):
+        raise ValueError("Gait contains angles outside joint limits")
 
     # Create input-output pairs
     dataset = []
