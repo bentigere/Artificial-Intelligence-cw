@@ -17,7 +17,10 @@ end
 
 for frame = 1:size(nn_angles, 1)
     plot_spider_pose(nn_angles(frame, :));
-    title(sprintf('NN predicted gait - Frame %d / %d', frame, size(nn_angles, 1)));
+    % Keep the lecturer's black body/leg lines visible in MATLAB's dark theme.
+    set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', 'ZColor', 'k');
+    set(findall(gca, 'Type', 'text'), 'Color', 'k');
+    title(sprintf('NN predicted gait - Frame %d / %d', frame, size(nn_angles, 1)), 'Color', 'k');
     drawnow;
     if ismember(frame, [1, 75, 150, 225, 300])
         exportgraphics(gcf, fullfile(nn_images, sprintf('matlab_nn_frame_%03d.png', frame)));
