@@ -1,0 +1,5 @@
+26.2.0.3468271 (R2026b) Update 2
+   300    24
+
+fprintf('MSE %.12g MAE %.12g snapshots %d\n',mean(nn_error.^2,'all'),mean(abs(nn_error),'all'),numel(dir('images/nn/matlab_nn_frame_*.png'))); diary off; zip('nn_matlab_evidence.zip',{'images/nn/matlab_nn_frame_*.png','data/nn_matlab_playback_log.txt'});
+MSE 0.0181599341697 MAE 0.106290567984 snapshots 5
