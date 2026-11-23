@@ -91,3 +91,25 @@ def test_no_duplicate_samples_between_splits(datasets):
     assert train_keys.isdisjoint(val_keys)
     assert train_keys.isdisjoint(test_keys)
     assert val_keys.isdisjoint(test_keys)
+
+
+def test_rejects_incorrect_frame_count(tmp_path):
+    """Check that the loader rejects a gait with only 200 frames."""
+
+    import csv
+    import pytest
+
+    from neural_network.dataset import load_datasets
+
+    # Create a temporary invalid CSV
+    file_path = tmp_path / "invalid_gait.csv"
+
+    with open(file_path, "w", newline="") as file:
+        writer = csv.writer(file)
+
+        for _ in range(200):
+            writer.writerow([0.0] * 24)
+
+    # The loader must reject the invalid dataset
+    with pytest.raises(ValueError, match="Expected 300 frames"):
+        load_datasets(file_path=file_path)
