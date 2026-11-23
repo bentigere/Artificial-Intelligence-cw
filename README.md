@@ -51,6 +51,7 @@ phase feature and output column conventions must match those above.
 
 For MATLAB, run **`main_nn`** from this repository to play the predicted gait and save
 five pose snapshots. This reuses the lecturer's functions and keeps the GA viewer intact.
-MATLAB execution remains unverified here because no runtime is installed and MATLAB
-Online needs sign-in. See [evaluation and comparison](neural_network/evaluation_report.md)
-for measured results, the weak reference-model fit, and limitations.
+The full 300-frame playback was verified in MATLAB Online R2026b Update 2; six actual
+NN/GA pose snapshots and the MATLAB execution log are included. See
+[evaluation and comparison](neural_network/evaluation_report.md) for measured results,
+the weak reference-model fit, and limitations.

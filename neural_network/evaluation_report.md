@@ -36,7 +36,19 @@ The comparison plots show all joints and all phases, including training phases. 
 
 `main_nn.m` is a separate playback entry point based on `main.m`. It validates the required 300-by-24, finite, in-range CSV, calls the existing `plot_spider_pose` for all frames, and saves snapshots at frames 1, 75, 150, 225 and 300 into `images/nn/`. The original `main.m`, `plot_spider_pose.m` and `forward_leg_kinematics2.m` are unchanged.
 
-**MATLAB playback has not been verified in this environment:** no local MATLAB runtime is available and MATLAB Online requires account sign-in. No MATLAB screenshots or visual observations are claimed. To complete this check, open the repository in MATLAB, set Current Folder to the repository root and run `main_nn`. Record the MATLAB release, confirm that the full cycle runs without errors, inspect all legs for discontinuities or implausible poses, compare against `main.m`, and include the generated snapshots. The Python contract checks do not substitute for MATLAB execution.
+**Verified on 23 November 2026 in MATLAB Online, 26.2.0.3468271 (R2026b) Update 2.** The predicted CSV loaded as 300-by-24 doubles, passed the script's finite-value/joint-limit assertions, and completed all 300 frames without a MATLAB error. Five exported NN pose images are committed at frames 1, 75, 150, 225 and 300. A corresponding GA target pose at frame 150 is included for comparison. The final viewer source tested is commit `c20c34a`; the lecturer's plotting/FK functions were reused unchanged. The companion script forces a white axes background so the black body lines and labels remain visible in MATLAB's dark theme.
+
+MATLAB independently calculated full-gait MSE **0.0181599341697 rad²** and MAE **0.106290567984 rad**, agreeing with the Python evaluation. The execution record is [nn_matlab_playback_log.txt](../data/nn_matlab_playback_log.txt).
+
+Visual inspection showed all eight labelled legs rendered throughout the cycle. The NN produces visibly different knee bends and foot placements from the GA target, consistent with the measured error. The body remains fixed because the supplied viewer is kinematic. Neither the playback nor these snapshots establish physical forward travel, foot contact, balance or an energy-efficient gait. The NN's last-to-first angle change is larger than the target's (see continuity measurements above).
+
+| NN prediction, frame 150 | GA target, frame 150 |
+| --- | --- |
+| ![MATLAB NN pose](../images/nn/matlab_nn_frame_150.png) | ![MATLAB GA pose](../images/nn/matlab_ga_frame_150.png) |
+
+![MATLAB predicted gait, final frame](../images/nn/matlab_nn_frame_300.png)
+
+To replay, open the repository in MATLAB, set Current Folder to its root and run `main_nn`. Run `main` for the existing GA viewer. A future checkpoint should be evaluated and replayed again rather than reusing these reference-model observations.
 
 ## Limitations
 
