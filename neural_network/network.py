@@ -87,10 +87,14 @@ class NeuralNetwork:
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
 
-        if X.ndim != 2 or X.shape[1] != 2:
-            raise ValueError("X must have shape (batch_size, 2)")
-        if y.shape != (X.shape[0], 24):
-            raise ValueError("y must have shape (batch_size, 24)")
+        if X.ndim != 2 or X.shape[1] != self.layer_sizes[0]:
+            raise ValueError(
+                f"X must have shape (batch_size, {self.layer_sizes[0]})"
+            )
+        if y.shape != (X.shape[0], self.layer_sizes[-1]):
+            raise ValueError(
+                f"y must have shape (batch_size, {self.layer_sizes[-1]})"
+            )
         if X.shape[0] == 0:
             raise ValueError("Batch cannot be empty")
         if not np.isfinite(X).all() or not np.isfinite(y).all():
