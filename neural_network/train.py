@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 from neural_network.dataset import load_datasets
 import random
+from neural_network.network import NeuralNetwork
 
 # config
 
@@ -70,3 +71,43 @@ def save_history(history, path="data/nn_training_history.csv"):
         comments="",
         fmt=["%d", "%.10g", "%.10g"],
     )
+
+
+def save_model(model, path="models/spider_nn.npz"):
+    """Save the architecture, weights and biases."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    parameters = {
+        "layer_sizes": np.asarray(model.layer_sizes, dtype=int),
+    }
+
+    for i in range(len(model.weights)):
+        parameters[f"weight_{i}"] = model.weights[i]
+        parameters[f"bias_{i}"] = model.biases[i]
+
+    # Opening the file explicitly preserves the supplied filename.
+    with path.open("wb") as file:
+        np.savez(file, **parameters)
+
+
+def load_model(path="models/spider_nn.npz"):
+    """Rebuild the network and restore its parameters."""
+    with np.load(path, allow_pickle=False) as parameters:
+        layer_sizes = tuple(int(size) for size in parameters["layer_sizes"])
+        model = NeuralNetwork(layer_sizes=layer_sizes)
+
+        for i in range(len(model.weights)):
+            weight = parameters[f"weight_{i}"]
+            bias = parameters[f"bias_{i}"]
+
+            if weight.shape != model.weights[i].shape:
+                raise ValueError(f"Incorrect weight shape at layer {i}")
+
+            if bias.shape != model.biases[i].shape:
+                raise ValueError(f"Incorrect bias shape at layer {i}")
+
+            model.weights[i] = weight.copy()
+            model.biases[i] = bias.copy()
+
+    return model
