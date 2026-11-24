@@ -1,6 +1,5 @@
 from pathlib import Path
 import numpy as np
-from neural_network.dataset import load_datasets
 import random
 from neural_network.network import NeuralNetwork
 
@@ -33,6 +32,10 @@ def train(
     rng = random.Random(seed)
     history = []
 
+    best_val_loss = float("inf")
+    best_weights = None
+    best_biases = None
+
     for epoch in range(1, epochs + 1):
         # Shuffle indices to keep inputs and targets paired.
         indices = list(range(len(X_train)))
@@ -55,6 +58,15 @@ def train(
             raise ValueError(f"Non-finite loss at epoch {epoch}")
 
         history.append((epoch, train_loss, val_loss))
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_weights = [weight.copy() for weight in model.weights]
+            best_biases = [bias.copy() for bias in model.biases]
+
+    if best_weights is not None:
+        model.weights = best_weights
+        model.biases = best_biases
 
     return np.asarray(history)
 

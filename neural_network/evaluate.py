@@ -12,66 +12,36 @@ from pathlib import Path
 import numpy as np
 
 from genetic_algorithm.chromosome import (
-    ANGLES_PER_FRAME, JOINT_ORDER, LEG_ORDER, LOWER_LIMITS, NUM_FRAMES, UPPER_LIMITS,
+    ANGLES_PER_FRAME,
+    JOINT_ORDER,
+    LEG_ORDER,
+    LOWER_LIMITS,
+    NUM_FRAMES,
+    UPPER_LIMITS,
 )
 from neural_network.dataset import load_datasets
 from neural_network.network import NeuralNetwork
 from neural_network.train import to_arrays
+from neural_network.updated_evaluate import (
+    _angles,
+    calculate_metrics,
+    cycle_metrics as _cycle_metrics,
+    phase_inputs,
+    validate_gait,
+)
 from neural_network.visualisation import create_evaluation_plots
-
-
-def phase_inputs():
-    """All 300 phases in CSV order, excluding the repeated endpoint at 2*pi."""
-    phase = 2 * np.pi * np.arange(NUM_FRAMES) / NUM_FRAMES
-    return np.column_stack((np.sin(phase), np.cos(phase)))
-
-
-def _angles(values):
-    values = np.asarray(values, dtype=float)
-    if values.ndim != 2 or values.shape[0] == 0 or values.shape[1] != ANGLES_PER_FRAME:
-        raise ValueError("Expected a non-empty array with 24 joint angles per row")
-    if not np.isfinite(values).all():
-        raise ValueError("Joint angles must be finite")
-    return values
-
-
-def calculate_metrics(predictions, targets):
-    """Return MSE (radians squared) and MAE (radians), overall and per joint."""
-    predictions, targets = _angles(predictions), _angles(targets)
-    if predictions.shape != targets.shape:
-        raise ValueError("Prediction and target shapes must match")
-    errors = predictions - targets
-    with np.errstate(over="ignore", invalid="ignore"):
-        squared_errors = errors ** 2
-    if not np.isfinite(squared_errors).all():
-        raise ValueError("Prediction errors are too large for finite metrics")
-    return {
-        "mse": float(np.mean(squared_errors)),
-        "mae": float(np.mean(np.abs(errors))),
-        "per_joint_mse": np.mean(squared_errors, axis=0).tolist(),
-        "per_joint_mae": np.mean(np.abs(errors), axis=0).tolist(),
-    }
-
-
-def validate_gait(gait):
-    """Check the exact export contract and report raw joint-limit violations."""
-    gait = _angles(gait)
-    if gait.shape != (NUM_FRAMES, ANGLES_PER_FRAME):
-        raise ValueError("Expected a gait with shape (300, 24)")
-    violation = np.maximum(np.maximum(LOWER_LIMITS - gait, gait - UPPER_LIMITS), 0)
-    invalid = violation > 0
-    return {
-        "valid": not bool(invalid.any()),
-        "out_of_bounds_count": int(invalid.sum()),
-        "invalid_frame_count": int(invalid.any(axis=1).sum()),
-        "max_limit_violation_rad": float(violation.max()),
-    }
 
 
 def _checkpoint_arrays(model):
     layers = np.asarray(model.layer_sizes)
-    if (layers.ndim != 1 or layers.size < 2 or layers.dtype.kind not in "iu"
-            or np.any(layers <= 0) or layers[0] != 2 or layers[-1] != 24):
+    if (
+        layers.ndim != 1
+        or layers.size < 2
+        or layers.dtype.kind not in "iu"
+        or np.any(layers <= 0)
+        or layers[0] != 2
+        or layers[-1] != 24
+    ):
         raise ValueError("Evaluation requires a network with 2 inputs and 24 outputs")
     if len(model.weights) != layers.size - 1 or len(model.biases) != layers.size - 1:
         raise ValueError("Checkpoint layer counts do not match the architecture")
@@ -79,7 +49,10 @@ def _checkpoint_arrays(model):
     for i, (input_size, output_size) in enumerate(zip(layers[:-1], layers[1:])):
         weight = np.asarray(model.weights[i], dtype=float)
         bias = np.asarray(model.biases[i], dtype=float)
-        if weight.shape != (input_size, output_size) or bias.shape not in ((output_size,), (1, output_size)):
+        if weight.shape != (input_size, output_size) or bias.shape not in (
+            (output_size,),
+            (1, output_size),
+        ):
             raise ValueError(f"Incorrect checkpoint parameter shape at layer {i}")
         if not np.isfinite(weight).all() or not np.isfinite(bias).all():
             raise ValueError("Checkpoint weights and biases must be finite")
@@ -102,12 +75,24 @@ def load_model(path):
     try:
         with np.load(path, allow_pickle=False) as checkpoint:
             layers = checkpoint["layer_sizes"]
-            if (layers.ndim != 1 or layers.size < 2 or layers.dtype.kind not in "iu"
-                    or np.any(layers <= 0) or layers[0] != 2 or layers[-1] != 24):
-                raise ValueError("Evaluation requires a network with 2 inputs and 24 outputs")
+            if (
+                layers.ndim != 1
+                or layers.size < 2
+                or layers.dtype.kind not in "iu"
+                or np.any(layers <= 0)
+                or layers[0] != 2
+                or layers[-1] != 24
+            ):
+                raise ValueError(
+                    "Evaluation requires a network with 2 inputs and 24 outputs"
+                )
             model = NeuralNetwork(layer_sizes=tuple(int(size) for size in layers))
-            model.weights = [checkpoint[f"weight_{i}"].copy() for i in range(layers.size - 1)]
-            model.biases = [checkpoint[f"bias_{i}"].copy() for i in range(layers.size - 1)]
+            model.weights = [
+                checkpoint[f"weight_{i}"].copy() for i in range(layers.size - 1)
+            ]
+            model.biases = [
+                checkpoint[f"bias_{i}"].copy() for i in range(layers.size - 1)
+            ]
         arrays = _checkpoint_arrays(model)
         model.biases = [arrays[f"bias_{i}"] for i in range(layers.size - 1)]
         return model
@@ -115,24 +100,28 @@ def load_model(path):
         raise ValueError(f"Cannot load model checkpoint {path}: {exc}") from exc
 
 
-def _cycle_metrics(gait):
-    return {
-        "max_adjacent_step_rad": float(np.max(np.abs(np.roll(gait, -1, axis=0) - gait))),
-        "max_last_to_first_step_rad": float(np.max(np.abs(gait[0] - gait[-1]))),
-    }
-
-
-def evaluate(model_path, target_path, history_path,
-             output_path="data/nn_predicted_gait.csv", plots_dir="images/nn",
-             metrics_path="data/nn_evaluation_metrics.json"):
+def evaluate(
+    model_path,
+    target_path,
+    history_path,
+    output_path="data/nn_predicted_gait.csv",
+    plots_dir="images/nn",
+    metrics_path="data/nn_evaluation_metrics.json",
+):
     inputs = {Path(path).resolve() for path in (model_path, target_path, history_path)}
     destinations = [Path(output_path), Path(metrics_path)] + [
-        Path(plots_dir) / name for name in
-        ("nn_joint_predictions.png", "nn_joint_errors.png", "nn_training_loss.png")
+        Path(plots_dir) / name
+        for name in (
+            "nn_joint_predictions.png",
+            "nn_joint_errors.png",
+            "nn_training_loss.png",
+        )
     ]
     outputs = {path.resolve() for path in destinations}
     if len(outputs) != len(destinations) or inputs & outputs:
-        raise ValueError("Output paths must be distinct and must not replace evaluation inputs")
+        raise ValueError(
+            "Output paths must be distinct and must not replace evaluation inputs"
+        )
     model = load_model(model_path)
     targets = np.loadtxt(target_path, delimiter=",")
     if not validate_gait(targets)["valid"]:
@@ -140,7 +129,9 @@ def evaluate(model_path, target_path, history_path,
     predictions = _angles(model.predict(phase_inputs()))
     validity = validate_gait(predictions)
     if not validity["valid"]:
-        raise ValueError(f"Predictions violate joint limits; no CSV exported: {validity}")
+        raise ValueError(
+            f"Predictions violate joint limits; no CSV exported: {validity}"
+        )
 
     # Reuse Member 1's deterministic split, not a new shuffled evaluation split.
     splits = load_datasets(file_path=target_path)
@@ -163,10 +154,15 @@ def evaluate(model_path, target_path, history_path,
     }
     for name, samples in zip(("train", "validation", "test"), splits):
         inputs, target_subset = to_arrays(samples)
-        metrics[name] = {"sample_count": len(samples), **calculate_metrics(model.predict(inputs), target_subset)}
+        metrics[name] = {
+            "sample_count": len(samples),
+            **calculate_metrics(model.predict(inputs), target_subset),
+        }
     train_mean = np.mean(to_arrays(splits[0])[1], axis=0)
     test_targets = to_arrays(splits[2])[1]
-    metrics["test_train_mean_baseline"] = calculate_metrics(np.tile(train_mean, (len(test_targets), 1)), test_targets)
+    metrics["test_train_mean_baseline"] = calculate_metrics(
+        np.tile(train_mean, (len(test_targets), 1)), test_targets
+    )
 
     # Plotting validates the loss-history contract before the export is written.
     paths = create_evaluation_plots(predictions, targets, history, plots_dir)
@@ -175,7 +171,9 @@ def evaluate(model_path, target_path, history_path,
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     np.savetxt(output_path, predictions, delimiter=",", fmt="%.17g")
-    metrics_path.write_text(json.dumps(metrics, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    metrics_path.write_text(
+        json.dumps(metrics, indent=2, allow_nan=False) + "\n", encoding="utf-8"
+    )
     return metrics
 
 
@@ -189,11 +187,20 @@ def main(argv=None):
     parser.add_argument("--metrics", default="data/nn_evaluation_metrics.json")
     args = parser.parse_args(argv)
     try:
-        metrics = evaluate(args.model, args.target, args.history, args.output, args.plots_dir, args.metrics)
+        metrics = evaluate(
+            args.model,
+            args.target,
+            args.history,
+            args.output,
+            args.plots_dir,
+            args.metrics,
+        )
     except (OSError, ValueError) as exc:
         parser.exit(1, f"Evaluation failed: {exc}\n")
     for split in ("all", "train", "validation", "test"):
-        print(f"{split}: MSE={metrics[split]['mse']:.8g} rad^2; MAE={metrics[split]['mae']:.8g} rad")
+        print(
+            f"{split}: MSE={metrics[split]['mse']:.8g} rad^2; MAE={metrics[split]['mae']:.8g} rad"
+        )
     print(f"Saved valid 300 x 24 gait to {args.output}")
 
 

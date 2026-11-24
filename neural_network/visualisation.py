@@ -31,7 +31,9 @@ def _validate_inputs(predictions, targets, history):
 
     history = np.asarray(history, dtype=float)
     if history.ndim != 2 or history.shape[1] != 3 or history.shape[0] == 0:
-        raise ValueError("History must have shape (epochs, 3): epoch, train_mse, val_mse")
+        raise ValueError(
+            "History must have shape (epochs, 3): epoch, train_mse, val_mse"
+        )
     if not np.isfinite(history).all():
         raise ValueError("History must contain only finite values")
 
@@ -91,10 +93,21 @@ def create_evaluation_plots(predictions, targets, history, output_dir):
         for joint_index, joint in enumerate(joint_names):
             axis = axes[leg_index, joint_index]
             column = leg_index * len(JOINT_ORDER) + joint_index
-            axis.plot(phases, targets[:, column], color="#2166ac", linewidth=1.5,
-                      linestyle="--", label="GA target")
-            axis.plot(phases, predictions[:, column], color="#d95f02", linewidth=1.5,
-                      label="NN prediction")
+            axis.plot(
+                phases,
+                targets[:, column],
+                color="#2166ac",
+                linewidth=1.5,
+                linestyle="--",
+                label="GA target",
+            )
+            axis.plot(
+                phases,
+                predictions[:, column],
+                color="#d95f02",
+                linewidth=1.5,
+                label="NN prediction",
+            )
             axis.set_title(f"{leg} · {joint}", fontsize=11)
             axis.grid(alpha=0.25)
             axis.set_xlim(0, 1)
@@ -103,7 +116,9 @@ def create_evaluation_plots(predictions, targets, history, output_dir):
             if leg_index == len(LEG_ORDER) - 1:
                 axis.set_xlabel("Gait phase (cycle fraction)")
     axes[0, 0].legend(fontsize=8, loc="best")
-    figure.suptitle("Predicted versus GA joint angles · all 300 gait phases", fontsize=17)
+    figure.suptitle(
+        "Predicted versus GA joint angles · all 300 gait phases", fontsize=17
+    )
     _save(figure, paths["joint_predictions"])
 
     labels = [f"{leg} {joint.lower()}" for leg in LEG_ORDER for joint in joint_names]

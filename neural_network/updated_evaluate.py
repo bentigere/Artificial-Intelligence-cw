@@ -1,0 +1,88 @@
+"""Evaluate in-memory predictions without loading or saving files."""
+
+import numpy as np
+from genetic_algorithm.chromosome import (
+    ANGLES_PER_FRAME,
+    LOWER_LIMITS,
+    NUM_FRAMES,
+    UPPER_LIMITS,
+)
+
+
+def phase_inputs():
+    """Generate all gait phases in the original CSV order."""
+    phase = 2 * np.pi * np.arange(NUM_FRAMES) / NUM_FRAMES
+
+    return np.column_stack((np.sin(phase), np.cos(phase)))
+
+
+def validate_gait(gait):
+    """Check gait dimensions, finite values and joint limits."""
+    gait = np.asarray(gait, dtype=float)
+
+    if gait.shape != (NUM_FRAMES, ANGLES_PER_FRAME):
+        raise ValueError("Expected a gait with shape (300, 24)")
+
+    if not np.isfinite(gait).all():
+        raise ValueError("Joint angles must be finite")
+
+    violation = np.maximum(
+        np.maximum(LOWER_LIMITS - gait, gait - UPPER_LIMITS),
+        0,
+    )
+    invalid = violation > 0
+
+    return {
+        "valid": not bool(invalid.any()),
+        "out_of_bounds_count": int(invalid.sum()),
+        "invalid_frame_count": int(invalid.any(axis=1).sum()),
+        "max_limit_violation_rad": float(violation.max()),
+    }
+
+
+def _angles(values):
+    values = np.asarray(values, dtype=float)
+    if values.ndim != 2 or values.shape[0] == 0 or values.shape[1] != ANGLES_PER_FRAME:
+        raise ValueError("Expected a non-empty array with 24 joint angles per row")
+    if not np.isfinite(values).all():
+        raise ValueError("Joint angles must be finite")
+    return values
+
+
+def updated_evaluate(model, X, y):
+    """Calculate overall and per-joint MSE and MAE."""
+    predictions = _angles(model.predict(X))
+    targets = _angles(y)
+
+    if predictions.shape != targets.shape:
+        raise ValueError("Prediction and target shapes must match")
+
+    with np.errstate(over="ignore", invalid="ignore"):
+        errors = predictions - targets
+        squared_errors = errors**2
+
+    if not np.isfinite(squared_errors).all():
+        raise ValueError("Prediction errors are too large for finite metrics")
+
+    absolute_errors = np.abs(errors)
+
+    return {
+        "sample_count": len(targets),
+        "mse": float(np.mean(squared_errors)),
+        "mae": float(np.mean(absolute_errors)),
+        "per_joint_mse": np.mean(squared_errors, axis=0).tolist(),
+        "per_joint_mae": np.mean(absolute_errors, axis=0).tolist(),
+    }
+
+
+def cycle_metrics(gait):
+    """Measure adjacent-frame changes, including the cycle boundary."""
+    gait = _angles(gait)
+    if gait.shape != (NUM_FRAMES, ANGLES_PER_FRAME):
+        raise ValueError("Expected a gait with shape (300, 24)")
+    return {
+        "max_adjacent_step_rad": float(
+            np.max(np.abs(np.roll(gait, -1, axis=0) - gait))
+        ),
+        "max_last_to_first_step_rad": float(np.max(np.abs(gait[0] - gait[-1]))),
+    }
