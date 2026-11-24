@@ -22,18 +22,17 @@ from genetic_algorithm.selection import tournament_selection
 from genetic_algorithm.visualisation import plot_fitness
 
 POPULATION_SIZE = 20
-GENERATIONS = 30
+GENERATIONS = 100
 TOURNAMENT_SIZE = 3
 MUTATION_RATE = 0.1
-MUTATION_STRENGTH = 0.05
+MUTATION_STRENGTH = 0.15
 
 
 def main():
     random.seed(42)
 
     population = create_population(
-    size=POPULATION_SIZE,
-    reference_pose=MATLAB_STANDING_POSE
+        size=POPULATION_SIZE, reference_pose=MATLAB_STANDING_POSE
     )
     # Keep the same ground plane throughout the search.
     ground_z = get_ground_z(MATLAB_STANDING_POSE)

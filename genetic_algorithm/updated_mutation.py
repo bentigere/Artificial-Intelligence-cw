@@ -11,7 +11,7 @@ from genetic_algorithm.chromosome import (
 def updated_mutate(
     chromosome,
     mutation_rate=0.1,
-    mutation_strength=0.05,
+    mutation_strength=0.15,
     bump_frames=60,
 ):
     """Add a smooth change across consecutive frames of a joint."""
