@@ -1,5 +1,3 @@
-"""Evaluate in-memory predictions without loading or saving files."""
-
 import numpy as np
 from genetic_algorithm.chromosome import (
     ANGLES_PER_FRAME,
