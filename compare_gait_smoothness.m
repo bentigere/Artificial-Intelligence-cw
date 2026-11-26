@@ -1,6 +1,5 @@
 
 % Compare GA gait and Neural Network gait smoothness
-
 ga = readmatrix('data/best_gait_matlab.csv');
 nn = readmatrix('data/nn_final_gait.csv');
 
@@ -8,12 +7,11 @@ nn = readmatrix('data/nn_final_gait.csv');
 assert(isequal(size(ga), [300, 24]));
 assert(isequal(size(nn), [300, 24]));
 
-% Include the transition from the final frame
-% back to the first frame for periodic walking.
+% Measures joint-angle changes between frames, including the cycle boundary.
 ga_velocity = diff([ga; ga(1, :)], 1, 1);
 nn_velocity = diff([nn; nn(1, :)], 1, 1);
 
-% Second differences measure changes in movement
+% Measures how abruptly joint movements change between frames.
 ga_acceleration = diff([ga_velocity; ga_velocity(1, :)], 1, 1);
 nn_acceleration = diff([nn_velocity; nn_velocity(1, :)], 1, 1);
 

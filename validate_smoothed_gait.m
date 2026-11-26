@@ -9,7 +9,7 @@ assert(isequal(size(raw), [300, 24]));
 assert(isequal(size(smoothed), [300, 24]));
 assert(all(isfinite(smoothed), 'all'));
 
-% Each joint has a permitted angular range.
+% Checks that smoothing keeps all joint angles within their permitted limits.
 lower_limits = repmat([-1.5708, -1.5708, -2.0], 1, 8);
 upper_limits = repmat([1.5708, 1.5708, 1.0], 1, 8);
 

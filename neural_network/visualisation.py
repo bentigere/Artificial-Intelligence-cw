@@ -17,7 +17,8 @@ from genetic_algorithm.chromosome import (
     NUM_FRAMES,
 )
 
-
+# Checks that the prediction, target and training data are valid
+# before generating evaluation graphs.
 def _validate_inputs(predictions, targets, history):
     predictions = np.asarray(predictions, dtype=float)
     targets = np.asarray(targets, dtype=float)
@@ -60,7 +61,8 @@ def _save(figure, path):
     figure.savefig(path, dpi=150, facecolor="white")
     figure.clear()
 
-
+# Training loss shows convergence, joint predictions show how closely
+# the NN follows the GA gait, and error plots highlight weaker joints.
 def create_evaluation_plots(predictions, targets, history, output_dir):
     """Write the three required PNGs and return their paths.
 

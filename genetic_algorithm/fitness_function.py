@@ -1,6 +1,20 @@
-# evaluate how realistic it is
 
-# define the ground value
+"""Fitness evaluation for the Genetic Algorithm's spider walking gaits.
+
+This module evaluates how effectively a candidate gait coordinates the
+spider's eight legs. Forward kinematics converts joint angles into foot
+positions, which are compared against desired walking behaviour.
+
+The Genetic Algorithm can generate imperfect movements. Instead of
+rejecting every candidate with movement errors, the fitness function
+penalises poor ground contact, ground penetration, insufficient foot
+clearance, inaccurate horizontal movement and abrupt joint movements.
+
+The combined penalty becomes a fitness score. Lower penalties result
+in higher fitness, allowing the GA to favour better walking patterns
+over successive generations.
+"""
+
 import numpy as np
 
 from genetic_algorithm.kinematics import forward_leg_kinematics2
@@ -242,7 +256,30 @@ def horizontal_movement_penalty(foot_positions, target_x):
 
 
 def fitness_function(chromosome, ground_z):
-    """Combine penalties into one score; higher is better."""
+    """Evaluate a complete spider gait using weighted movement penalties.
+
+    Each chromosome represents a candidate walking cycle containing
+    joint angles for the spider's eight legs. The fitness function
+    uses forward kinematics to determine foot positions and compares
+    the resulting movement with the desired walking behaviour.
+
+    Imperfect gaits are penalised rather than immediately rejected.
+    Penalties measure poor support height, ground penetration,
+    insufficient swing clearance, inaccurate horizontal movement
+    and abrupt changes in joint angles.
+
+    The penalties are weighted and combined into a single negative
+    fitness score. Higher scores indicate better gait quality and
+    help the GA select stronger candidates for reproduction.
+
+    Args:
+        chromosome: Encoded candidate spider gait.
+        ground_z: Ground-plane height used to evaluate foot positions.
+
+    Returns:
+        float: Negative weighted penalty score. A score closer
+        to zero indicates fewer measured gait errors.
+    """
     gait = chromosome_to_gait(chromosome)
     foot_positions = get_gait_foot_positions(chromosome)
 
@@ -253,13 +290,30 @@ def fitness_function(chromosome, ground_z):
     penetration = ground_penetration_penalty(foot_positions, ground_z)
 
     smoothness = smoothness_penalty(gait)
+    """Penalise abrupt changes in joint movement across a gait cycle.
 
+    Measures squared second differences in consecutive joint angles,
+    including the transition from the last frame to the first.
+    This encourages gradual motion and avoids sudden changes in
+    movement between frames.
+    """
     swing = swing_clearance_penalty(foot_positions, ground_z, schedule, clearance=0.15)
+    """Evaluate whether swinging feet follow the intended lifting path.
 
+    Compares each swinging foot's height with a smooth target
+    trajectory that rises and falls during the swing phase.
+    This discourages the spider from keeping its feet on the
+    ground throughout the entire walking cycle.
+    """
     target_x = create_horizontal_targets(schedule, step_length=0.8)
 
     horizontal = horizontal_movement_penalty(foot_positions, target_x)
+    """Penalise deviations from the target horizontal foot trajectories.
 
+    Compares each foot's X coordinate with the desired position
+    during its walking cycle. This encourages coordinated forward
+    and backward foot movement rather than only vertical lifting.
+    """
     # Acceptable position errors, in the same units as foot coordinates.
     support_tolerance = 0.03
     penetration_tolerance = 0.01

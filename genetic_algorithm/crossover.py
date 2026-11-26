@@ -3,18 +3,9 @@ import random
 
 
 def crossover(parent1, parent2):
-    """
-    Combine two parent chromosomes using uniform crossover.
-
-    Each gene has a 50% chance of coming from either parent.
-
-    Args:
-        parent1: First chromosome (list of joint angles).
-        parent2: Second chromosome (list of joint angles).
-
-    Returns:
-        A new chromosome containing genes from both parents.
-    """
+    # Crossover was chosen because it combines joint movements from two parent gaits
+    # to create new walking patterns. This allows the GA to explore different
+    # combinations of movements that may improve the spider's coordination and fitness.
 
     # Both parents must have the same number of genes.
     if len(parent1) != len(parent2):

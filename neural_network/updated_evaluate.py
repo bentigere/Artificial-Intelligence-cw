@@ -46,7 +46,8 @@ def _angles(values):
         raise ValueError("Joint angles must be finite")
     return values
 
-
+# MSE was chosen to measure prediction accuracy and penalise large joint-angle errors.
+# MAE was included because it is easier to interpret as an average error in radians.
 
 def calculate_metrics(predictions, targets):
     """Calculate prediction errors for the spider's 24 joints.
