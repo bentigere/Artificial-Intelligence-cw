@@ -15,9 +15,18 @@ import subprocess
 import numpy as np
 
 from neural_network.dataset import load_datasets
-from neural_network.evaluate import save_model
 from neural_network.network import NeuralNetwork
-from neural_network.train import BATCH_SIZE, EPOCHS, LEARNING_RATE, SEED, save_history, to_arrays, train
+
+from neural_network.train import (
+    BATCH_SIZE,
+    EPOCHS,
+    LEARNING_RATE,
+    SEED,
+    save_history,
+    save_model,
+    to_arrays,
+    train,
+)
 
 
 def _sha256(path):

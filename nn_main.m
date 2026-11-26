@@ -4,15 +4,17 @@ clc;
 % Select the NN output, using the same choices as main_nn.m.
 project_dir = fileparts(mfilename('fullpath'));
 addpath(project_dir);
-nn_gait_type = "raw"; % "raw" or "smoothed"
+nn_gait_type = "raw";
 
 switch nn_gait_type
     case "raw"
-        nn_file = 'nn_predicted_gait.csv';
+        nn_file = 'nn_final_gait.csv';
+
     case "smoothed"
-        nn_file = 'nn_smoothed_gait.csv';
+        nn_file = 'nn_final_smoothed_gait.csv';
+
     otherwise
-        error('Unknown Neural Network gait type.');
+        error('Unknown NN gait type.');
 end
 
 angles = readmatrix(fullfile(project_dir, 'data', nn_file));
