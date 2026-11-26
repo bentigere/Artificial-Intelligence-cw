@@ -1,0 +1,35 @@
+{
+  "label": "Reference checkpoint trained for evaluation; not the team's final selected model.",
+  "seed": 42,
+  "dataset_split_seed": 42,
+  "epochs": 2000,
+  "learning_rate": 0.001,
+  "batch_size": 32,
+  "architecture": [
+    2,
+    64,
+    128,
+    64,
+    24
+  ],
+  "target_path": "data\\best_gait_matlab.csv",
+  "target_sha256": "4fe31ce076cfbabf6acb8c0e6be1c254f99191794996a54dd47e072c9c1ca4d7",
+  "model_path": "data\\nn_final_model.npz",
+  "model_sha256": "86b9bafe40f21116b515e961d5de14dbfc0a027890cd75262c4833ba417d821c",
+  "history_path": "data\\nn_final_history.csv",
+  "history_sha256": "52dbb88d15f2f4b66f806e7a78e7f23ce962e551336350fcf1f22d8ef9455196",
+  "source_main_commit": "3fa0833fda8452039dee0b6a9e3441d8293bf83f",
+  "source_sha256": {
+    "network.py": "f227b675dbb5d0c42fb83ae20f5b817749f0f0778b8406acc6b2d2259518b7a1",
+    "dataset.py": "5042ea758cdb6490dc541bb757843efb43584bed2c8868d495eebc04c2fac4d9",
+    "train.py": "0d839d6029fba9c74df19314d03172622566d47d33b492bc37f2fc4ec0c50da2"
+  },
+  "python_version": "3.11.9",
+  "numpy_version": "2.4.6",
+  "train_sample_count": 210,
+  "validation_sample_count": 45,
+  "first_epoch_train_mse": 1.406148572444645,
+  "first_epoch_validation_mse": 1.413614496984359,
+  "last_epoch_train_mse": 0.004903527788684958,
+  "last_epoch_validation_mse": 0.005430943726471654
+}

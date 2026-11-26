@@ -2,7 +2,7 @@
 % Compare raw Neural Network predictions with smoothed predictions
 
 ga = readmatrix('data/best_gait_matlab.csv');
-nn = readmatrix('data/nn_experiment_gait.csv');
+nn = readmatrix('data/nn_final_gait.csv');
 
 assert(isequal(size(ga), [300, 24]));
 assert(isequal(size(nn), [300, 24]));
@@ -50,4 +50,4 @@ fprintf('\nRoughness reduction: %.2f%%\n', ...
     100 * (1 - smooth_roughness / nn_roughness));
 
 % Save without overwriting the original prediction
-writematrix(smoothed, 'data/nn_smoothed_gait.csv');
+writematrix(smoothed, 'data/nn_final_smoothed_gait.csv');

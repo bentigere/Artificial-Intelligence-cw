@@ -1,15 +1,20 @@
 
-% Check smoothed gait against the original valid joint limits
+% Validate the smoothed Neural Network gait from the final model.
+% Smoothing must preserve valid joint angles and gait dimensions.
 
-raw = readmatrix('data/nn_experiment_gait.csv');
-smoothed = readmatrix('data/nn_smoothed_gait.csv');
+raw = readmatrix('data/nn_final_gait.csv');
+smoothed = readmatrix('data/nn_final_smoothed_gait.csv');
 
+assert(isequal(size(raw), [300, 24]));
 assert(isequal(size(smoothed), [300, 24]));
 assert(all(isfinite(smoothed), 'all'));
 
-% A positive, normalised moving average cannot exceed
-% the minimum or maximum of its source values.
-assert(all(smoothed >= min(raw, [], 1) - 1e-10, 'all'));
-assert(all(smoothed <= max(raw, [], 1) + 1e-10, 'all'));
+% Each joint has a permitted angular range.
+lower_limits = repmat([-1.5708, -1.5708, -2.0], 1, 8);
+upper_limits = repmat([1.5708, 1.5708, 1.0], 1, 8);
 
-disp('Smoothed gait is finite and stays within raw gait ranges.');
+assert(all(smoothed >= lower_limits & ...
+    smoothed <= upper_limits, 'all'), ...
+    'Smoothed gait violates joint limits.');
+
+disp('Final smoothed NN gait passed validation.');

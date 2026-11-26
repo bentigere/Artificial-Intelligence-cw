@@ -2,7 +2,7 @@
 % Compare GA gait and Neural Network gait smoothness
 
 ga = readmatrix('data/best_gait_matlab.csv');
-nn = readmatrix('data/nn_experiment_gait.csv');
+nn = readmatrix('data/nn_final_gait.csv');
 
 % Ensure both gaits have 300 frames and 24 joint angles
 assert(isequal(size(ga), [300, 24]));
