@@ -61,7 +61,9 @@ def main():
         seed=seed,
     )
 
+    # Save the best model
     save_model(model, model_path)
+    # Save the entire history
     save_history(history, history_path)
 
     # Evaluate each split separately.
