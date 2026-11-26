@@ -4,6 +4,8 @@ divides datasets into train, validation, and test
 - 15%: validation
 - 15%: test
 """
+# Prepares the optimised GA gait data for Neural Network training.
+# Uses the walking-cycle phase as input and the 24 joint angles as targets.
 
 import csv
 import math
@@ -15,6 +17,11 @@ from genetic_algorithm.chromosome import (
     UPPER_LIMITS,
 )
 
+# Loads the optimised GA gait and prepares it for NN training.
+# Sine and cosine represent the walking-cycle phase without a sudden jump
+# between the end and start of the cycle.
+# The 70/15/15 split separates training, validation and testing data
+# so we can evaluate the NN on samples it has not trained on.
 def load_datasets(file_path="data/best_gait_matlab.csv"):
     # Read the gait data from the CSV file
     with open(file_path, "r") as file:

@@ -1,6 +1,8 @@
 import random
 
-
+# Mutation was chosen to introduce random changes to the spider's joint angles.
+# This creates new walking patterns that crossover alone might not produce,
+# helping maintain diversity and reducing the risk of premature convergence.
 def mutate(
     chromosome,
     mutation_rate=0.01,

@@ -1,15 +1,16 @@
 
-% Compare raw Neural Network predictions with smoothed predictions
-
+% Compares raw and smoothed NN gaits for accuracy and movement smoothness.
 ga = readmatrix('data/best_gait_matlab.csv');
 nn = readmatrix('data/nn_final_gait.csv');
 
 assert(isequal(size(ga), [300, 24]));
 assert(isequal(size(nn), [300, 24]));
 
-% Periodic moving average
-% Uses neighbouring frames on both sides.
-% circshift ensures the gait loop is preserved.
+% Checks that the GA and NN data contain no invalid values.
+assert(all(isfinite(ga), 'all'));
+assert(all(isfinite(nn), 'all'));
+
+% Smooths each joint using 11 frames while preserving the repeating gait cycle.
 
 radius = 5;
 smoothed = zeros(size(nn));

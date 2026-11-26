@@ -10,14 +10,15 @@ BATCH_SIZE = 32
 EPOCHS = 500
 SEED = 42
 
-
+# Converts the gait dataset into NumPy arrays for neural network training.
 def to_arrays(data):
     """Convert (inputs, targets) pairs into NumPy arrays."""
     X = np.asarray([inputs for inputs, _ in data], dtype=float)
     y = np.asarray([targets for _, targets in data], dtype=float)
     return X, y
 
-
+# Trains the neural network using mini-batch gradient descent and backpropagation.
+# Validation loss is monitored to identify the best-performing model.
 def train(
     model,
     X_train,
@@ -41,9 +42,11 @@ def train(
         indices = list(range(len(X_train)))
         rng.shuffle(indices)
 
+        # Mini-batch training balances efficient weight updates with stable learning.
         for start in range(0, len(indices), batch_size):
             batch = indices[start : start + batch_size]
 
+            # A small learning rate allows gradual weight updates and reduces instability.
             model.train_batch(
                 X_train[batch],
                 y_train[batch],
@@ -58,7 +61,9 @@ def train(
             raise ValueError(f"Non-finite loss at epoch {epoch}")
 
         history.append((epoch, train_loss, val_loss))
-
+        
+        # Restore the weights with the lowest validation loss rather than
+        # using the final epoch, which may perform worse.
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_weights = [weight.copy() for weight in model.weights]
@@ -70,7 +75,7 @@ def train(
 
     return np.asarray(history)
 
-
+# Saves the training and validation losses for analysing convergence.
 def save_history(history, path="data/nn_training_history.csv"):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,7 +89,7 @@ def save_history(history, path="data/nn_training_history.csv"):
         fmt=["%d", "%.10g", "%.10g"],
     )
 
-
+# Saves the trained weights and biases so the model can be reused.
 def save_model(model, path="models/spider_nn.npz"):
     """Save the architecture, weights and biases."""
     path = Path(path)
@@ -102,7 +107,7 @@ def save_model(model, path="models/spider_nn.npz"):
     with path.open("wb") as file:
         np.savez(file, **parameters)
 
-
+# Loads the saved weights and biases to restore the trained network.
 def load_model(path="models/spider_nn.npz"):
     """Rebuild the network and restore its parameters."""
     with np.load(path, allow_pickle=False) as parameters:

@@ -1,3 +1,19 @@
+
+"""Population management for the spider gait Genetic Algorithm.
+
+A population is a collection of candidate spider walking gaits.
+Each chromosome represents a complete walking cycle containing
+300 frames and 24 joint angles per frame.
+
+The initial population provides different candidate movements
+for the Genetic Algorithm to evaluate. The fitness function
+penalises movement errors, allowing selection and genetic
+operators to favour better walking patterns over generations.
+
+This module supports the creation and management of candidate
+solutions during the optimisation process.
+"""
+
 import numpy as np
 
 from genetic_algorithm.chromosome import (
@@ -35,13 +51,7 @@ LEG_PHASES = [0.0 if leg in GROUP_A else np.pi for leg in LEGS]
 
 
 def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
-    """
-    Generate a coordinated 300-frame spider gait.
-
-    Each chromosome contains 7200 joint angles.
-    Alternating leg groups use opposite phases.
-    """
-
+    """Creates a random, smooth walking gait around the reference pose."""
     reference_pose = np.asarray(reference_pose, dtype=float)
 
     if reference_pose.shape != (ANGLES_PER_FRAME,):
@@ -85,8 +95,7 @@ def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
 
 
 def create_population(size=POPULATION_SIZE, reference_pose=STANDING_POSE):
-    """Create smooth candidate gaits for MATLAB or Webots."""
-
+    """Creates the initial population of spider gaits for the GA."""
     rng = np.random.default_rng(42)
 
     population = []

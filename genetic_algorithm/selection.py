@@ -3,15 +3,10 @@ import random
 
 
 def tournament_selection(scored_population, tournament_size=3):
-    """
-    Select a parent using tournament selection.
-
-    scored_population: list of (fitness_score, chromosome) pairs
-    tournament_size: number of candidates competing
-
-    Returns a copy of the chromosome with the highest fitness
-    among the randomly selected candidates.
-    """
+    # Tournament selection was chosen because it is simple and gives
+    # better-performing spider gaits a higher chance of being selected.
+    # It also maintains population diversity and helps avoid premature convergence.
+    # A tournament size of 3 balances selecting good solutions with exploring others.
 
     # Randomly choose chromosomes to compete
     candidates = random.sample(scored_population, tournament_size)

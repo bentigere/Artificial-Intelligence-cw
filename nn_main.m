@@ -1,10 +1,13 @@
+% Animates the spider gait predicted by the trained Neural Network.
+% Allows comparison between raw and smoothed NN movements.
+
 clear;
 clc;
 
-% Select the NN output, using the same choices as main_nn.m.
+% Selects the raw or smoothed NN gait for animation.
 project_dir = fileparts(mfilename('fullpath'));
 addpath(project_dir);
-nn_gait_type = "raw";
+nn_gait_type = "smoothed";
 
 switch nn_gait_type
     case "raw"
@@ -17,6 +20,7 @@ switch nn_gait_type
         error('Unknown NN gait type.');
 end
 
+% Checks the gait dimensions and ensures all joint angles are valid.
 angles = readmatrix(fullfile(project_dir, 'data', nn_file));
 assert(isequal(size(angles), [300, 24]), 'Expected 300 rows and 24 angles.');
 assert(all(isfinite(angles(:))), 'Predicted angles must be finite.');
@@ -35,6 +39,29 @@ segment_lengths = [1.2, 0.7, 1.0];
 base_angles = deg2rad([45, 75, 105, 135, -135, -105, -75, -45]);
 leg_names = {'L1', 'L2', 'L3', 'L4', 'R4', 'R3', 'R2', 'R1'};
 
+% Calculates the ground level using the reference standing pose.
+reference_angles = [0, -pi/4, -pi/3];
+reference_foot_heights = zeros(1, 8);
+
+for leg = 1:8
+    angle = base_angles(leg);
+
+    base_pos = [
+        1.5 * cos(angle), ...
+        1.0 * sin(angle), ...
+        0
+    ];
+
+    [~, ~, ~, foot] = forward_leg_kinematics2( ...
+        base_pos, angle, reference_angles, segment_lengths);
+
+    reference_foot_heights(leg) = foot(3);
+end
+
+ground_z = mean(reference_foot_heights);
+
+fprintf('Ground height: %.4f\n', ground_z);
+
 % Create the figure only once.
 fig = figure('Color', 'w', 'Name', 'NN Predicted Spider Gait');
 ax = axes('Parent', fig, 'Color', 'w', ...
@@ -50,6 +77,24 @@ view(ax, 45, 45);
 xlabel(ax, 'X');
 ylabel(ax, 'Y');
 zlabel(ax, 'Z');
+
+% Draws the same ground plane used in the GA animation.
+[Xground, Yground] = meshgrid(-4:0.5:4, -4:0.5:4);
+
+Zground = ground_z * ones(size(Xground));
+
+surf(ax, Xground, Yground, Zground, ...
+    'FaceColor', [0.75, 0.85, 0.75], ...
+    'FaceAlpha', 0.25, ...
+    'EdgeColor', [0.55, 0.65, 0.55], ...
+    'EdgeAlpha', 0.3, ...
+    'HandleVisibility', 'off');
+
+% Displays the calculated ground height.
+text(ax, -3.8, -3.8, ground_z, ...
+    sprintf('Ground Z = %.2f', ground_z), ...
+    'FontSize', 10, ...
+    'Color', [0.2, 0.4, 0.2]);
 
 % Draw the fixed body and head.
 t = linspace(0, 2*pi, 100);
@@ -77,7 +122,7 @@ end
 title_handle = title(ax, 'NN predicted gait', 'Color', 'k');
 drawnow;
 
-% Repeat the same gait without clearing or recreating the figure.
+% Repeats the walking cycle while updating each leg's joint positions.
 for cycle = 1:repetitions
     cycle_start = tic;
 

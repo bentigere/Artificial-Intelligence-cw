@@ -1,4 +1,17 @@
 
+"""Chromosome representation for the Genetic Algorithm.
+
+A chromosome represents one complete spider walking cycle.
+The spider has eight legs, each containing three joints, so
+each frame contains 24 joint angles.
+
+A complete gait consists of 300 frames, giving a chromosome
+of 7,200 genes. Each gene represents a joint angle in radians.
+
+This module creates random chromosomes within the robot's
+joint limits and converts encoded chromosomes back into
+frame-by-frame data for fitness evaluation and visualisation.
+"""
 import numpy as np
 
 # Number of legs, joints, and frames
@@ -38,40 +51,60 @@ UPPER_LIMITS = np.tile(
 
 
 def create_chromosome(rng=None):
-    """
-    Create one complete spider gait.
+   
+    """Generate a random chromosome representing a complete spider gait.
 
-    Each frame contains 24 joint angles.
-    There are 300 frames in total.
+    Each of the 300 frames contains 24 joint angles for the eight
+    legs. Angles are generated within the permitted joint limits,
+    ensuring that the initial population contains valid joint
+    configurations.
 
-    The chromosome is stored as a flat array
-    containing 7,200 values.
+    The chromosome is flattened into a one-dimensional array
+    so the GA can apply selection, crossover and mutation.
 
-    All angles are in radians.
+    Args:
+        rng: Optional NumPy random number generator, allowing
+            reproducible chromosome generation.
+
+    Returns:
+        numpy.ndarray: A one-dimensional chromosome containing
+        7,200 joint angles in radians.
     """
 
     if rng is None:
         rng = np.random.default_rng()
 
-    # Randomly generate 300 frames of 24 angles
     gait = rng.uniform(
         low=LOWER_LIMITS,
         high=UPPER_LIMITS,
         size=(NUM_FRAMES, ANGLES_PER_FRAME)
     )
 
-    # Convert the 300 x 24 array into 7,200 genes
     chromosome = gait.flatten()
 
     return chromosome
 
 
 def chromosome_to_gait(chromosome):
-    """
-    Convert a flat chromosome back into 300 frames.
 
-    Input: 7,200 joint angles
-    Output: array with shape (300, 24)
+    """Convert an encoded chromosome into a frame-by-frame gait.
+
+    The Genetic Algorithm stores each walking cycle as a flat
+    array of genes. This function restores the original gait
+    structure so that other parts of the project can access
+    the joint angles for each frame.
+
+    Args:
+        chromosome: A one-dimensional array containing 7,200
+            joint angles.
+
+    Returns:
+        numpy.ndarray: A two-dimensional array with shape
+        (300, 24), representing the full walking cycle.
+
+    Raises:
+        ValueError: If the chromosome does not contain exactly
+            7,200 genes.
     """
 
     chromosome = np.asarray(chromosome)
