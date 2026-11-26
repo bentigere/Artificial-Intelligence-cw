@@ -17,12 +17,57 @@ segment_lengths = [1.2, 0.7, 1.0];
 base_angles = deg2rad([45, 75, 105, 135, -135, -105, -75, -45]);
 leg_names = {'L1', 'L2', 'L3', 'L4', 'R4', 'R3', 'R2', 'R1'};
 
+% MATLAB reference standing pose
+reference_angles = [0, -pi/4, -pi/3];
+
+% Calculate the ground height from the reference pose
+reference_foot_heights = zeros(1, 8);
+
+for leg = 1:8
+    angle = base_angles(leg);
+
+    base_pos = [
+        1.5 * cos(angle), ...
+        1.0 * sin(angle), ...
+        0
+    ];
+
+    [~, ~, ~, foot] = forward_leg_kinematics2( ...
+        base_pos, angle, reference_angles, segment_lengths);
+
+    reference_foot_heights(leg) = foot(3);
+end
+
+ground_z = mean(reference_foot_heights);
+
+fprintf('Ground height: %.4f\n', ground_z);
+
+
 % Create the figure only once.
 fig = figure('Color', 'w', 'Name', 'Generated Spider Gait');
 ax = axes('Parent', fig);
 hold(ax, 'on');
 grid(ax, 'on');
 axis(ax, 'equal');
+
+% Draw a visible ground plane
+[Xground, Yground] = meshgrid(-4:0.5:4, -4:0.5:4);
+
+Zground = ground_z * ones(size(Xground));
+
+surf(ax, Xground, Yground, Zground, ...
+    'FaceColor', [0.75, 0.85, 0.75], ...
+    'FaceAlpha', 0.25, ...
+    'EdgeColor', [0.55, 0.65, 0.55], ...
+    'EdgeAlpha', 0.3, ...
+    'HandleVisibility', 'off');
+
+% Ground level label
+text(ax, -3.8, -3.8, ground_z, ...
+    sprintf('Ground Z = %.2f', ground_z), ...
+    'FontSize', 10, ...
+    'Color', [0.2, 0.4, 0.2]);
+
 xlim(ax, [-4, 4]);
 ylim(ax, [-4, 4]);
 zlim(ax, [-2, 2]);
