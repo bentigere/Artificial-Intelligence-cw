@@ -16,12 +16,21 @@ from neural_network.train import (
 )
 
 
+
 class RecordingNetwork:
-    """Record training batches without changing predictions."""
+    """Mock network used to check the training loop.
+
+    Records which mini-batches are passed to the model,
+    allowing tests to verify shuffling and data pairing
+    without performing real neural network training.
+    """
 
     def __init__(self, prediction=0.0):
+        """Initialise the mock's recorded batches and parameters."""
         self.batches = []
         self.prediction = prediction
+        self.weights = []
+        self.biases = []
 
     def train_batch(self, X, y, learning_rate):
         self.batches.append((X.copy(), y.copy(), learning_rate))
@@ -127,9 +136,22 @@ class TestTraining(unittest.TestCase):
                         epochs=1,
                     )
 
+
     def test_real_network_training_reduces_loss(self):
+        """Verify that training reduces error and restores the best model.
+
+        The training function records losses after each epoch but
+        restores the parameters from the epoch with the lowest
+        validation loss. Therefore, the final model must match
+        the best recorded validation checkpoint, not necessarily
+        the last training epoch.
+        """
         model = NeuralNetwork(layer_sizes=(2, 24), seed=7)
-        initial_loss = np.mean((model.predict(self.X) - self.y) ** 2)
+
+        initial_loss = np.mean(
+            (model.predict(self.X) - self.y) ** 2
+        )
+
         history = train(
             model,
             self.X,
@@ -143,12 +165,21 @@ class TestTraining(unittest.TestCase):
 
         self.assertTrue(np.isfinite(history).all())
         self.assertLess(history[-1, 1], initial_loss)
+
+        # Identify the epoch with the best validation performance.
+        best_epoch = int(np.argmin(history[:, 2]))
+
+        # The restored model must match that epoch's recorded losses.
         np.testing.assert_allclose(
-            history[-1, 1], np.mean((model.predict(self.X) - self.y) ** 2)
+            history[best_epoch, 1],
+            np.mean((model.predict(self.X) - self.y) ** 2),
         )
+
         np.testing.assert_allclose(
-            history[-1, 2],
-            np.mean((model.predict(self.X[:2]) - self.y[:2]) ** 2),
+            history[best_epoch, 2],
+            np.mean(
+                (model.predict(self.X[:2]) - self.y[:2]) ** 2
+            ),
         )
 
     def test_save_history_creates_directory_and_writes_csv(self):
