@@ -17,6 +17,32 @@ segment_lengths = [1.2, 0.7, 1.0];
 base_angles = deg2rad([45, 75, 105, 135, -135, -105, -75, -45]);
 leg_names = {'L1', 'L2', 'L3', 'L4', 'R4', 'R3', 'R2', 'R1'};
 
+% MATLAB reference standing pose
+reference_angles = [0, -pi/4, -pi/3];
+
+% Calculate the ground height from the reference pose
+reference_foot_heights = zeros(1, 8);
+
+for leg = 1:8
+    angle = base_angles(leg);
+
+    base_pos = [
+        1.5 * cos(angle), ...
+        1.0 * sin(angle), ...
+        0
+    ];
+
+    [~, ~, ~, foot] = forward_leg_kinematics2( ...
+        base_pos, angle, reference_angles, segment_lengths);
+
+    reference_foot_heights(leg) = foot(3);
+end
+
+ground_z = mean(reference_foot_heights);
+
+fprintf('Ground height: %.4f\n', ground_z);
+
+
 % Create the figure only once.
 fig = figure('Color', 'w', 'Name', 'Generated Spider Gait');
 ax = axes('Parent', fig);
