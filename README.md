@@ -1,57 +1,61 @@
-[course_work_description](../../../Downloads/M33174_cw_item1_.pdf)
+## Part 1: Genetic Algorithm
 
-[forward_leg_kinematics2](forward_leg_kinematics2.m)
-returns 4 coordinates for 1 leg
-j1: the attachment point of the leg to the body.
-j2: the connection between the coxa and femur.
-j3: the connection between the femur and tibia.
-j4: the foot tip.
+### See the spider animation
 
-## run GA
+1. open the project folder in Matlab
+2. run the `ga_main.m`
 
-1. every time run GA, change the output csv file path
+### Understanding the outputs
 
-```terminal
-python test/ga.py
+- `data/best_gait_matlab.csv` contains 300 frames of 24 joint
+  angles in radians. Each row represents one spider pose.
+- `data/fitness_history.csv` records the best and average fitness
+  scores for each generation.
+- Higher fitness scores are better. Scores are negative because
+  the fitness function subtracts penalties.
+- The fitness plot shows whether candidate solutions improve
+  over generations.
+- The MATLAB animation displays the generated gait with a fixed
+  body; it does not simulate physical forward movement.
+
+### Generate GA
+
+Run from the project root
+
+```bash
+python -m genetic_algorithm.main
 ```
 
-## animate spider model
+or if you use uv
 
-1. run the main.m file through Matlab
-   - change the csv file path
-
-## Neural network evaluation (Member 4)
-
-Run from the repository root with Python 3.12+ and NumPy/Matplotlib installed:
-
-```sh
-python -m pip install numpy matplotlib pytest
-python -m neural_network.evaluate
-python -m pytest -q
+```bash
+uv run python -m genetic_algorithm.main
 ```
 
-The evaluator loads `data/nn_reference_model.npz`, compares all ordered phases with
-`data/best_gait_matlab.csv`, and exports **`data/nn_predicted_gait.csv` (300 rows × 24 columns)**.
-It also saves overall and train/validation/test MSE/MAE, per-joint errors and limit
-diagnostics to `data/nn_evaluation_metrics.json`, plus the three plots in `images/nn/`.
-Invalid predictions fail rather than being clipped or exported.
+## Part 2: Neural Network
 
-No saved model was present on main when evaluation was added. The committed checkpoint
-is a labelled reference using the team's existing trainer defaults. To reproduce it:
+### see the spider animation
 
-```sh
-python -m neural_network.reference_training
-python -m neural_network.evaluate
+1. open the project folder in Matlab
+2. run the `nn_main.m`
+
+### Understanding the outputs
+
+- `models/spider_nn.npz` stores the trained network.
+- `data/nn_training_history.csv` records training progress.
+- `data/nn_predicted_gait.csv` contains predicted joint angles,
+  exported when the evaluation checks permit.
+
+### Train the neural network
+
+Run from the project root after generating the GA gait:
+
+```bash
+python -m neural_network.main
 ```
 
-For another saved model/history, use `--model PATH --history PATH`. Checkpoints use
-NumPy NPZ arrays named `layer_sizes`, `weight_0`, `bias_0`, etc.; `save_model()` in
-`neural_network/evaluate.py` exports a trained `NeuralNetwork` without pickle. The
-phase feature and output column conventions must match those above.
+Alternatively, with uv:
 
-For MATLAB, run **`main_nn`** from this repository to play the predicted gait and save
-five pose snapshots. This reuses the lecturer's functions and keeps the GA viewer intact.
-The full 300-frame playback was verified in MATLAB Online R2026b Update 2; six actual
-NN/GA pose snapshots and the MATLAB execution log are included. See
-[evaluation and comparison](neural_network/evaluation_report.md) for measured results,
-the weak reference-model fit, and limitations.
+```bash
+uv run python -m neural_network.main
+```

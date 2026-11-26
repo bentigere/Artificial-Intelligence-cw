@@ -8,7 +8,7 @@ nn_gait_type = "raw"; % "raw" or "smoothed"
 
 switch nn_gait_type
     case "raw"
-        nn_file = 'nn_experiment_gait.csv';
+        nn_file = 'nn_predicted_gait.csv';
     case "smoothed"
         nn_file = 'nn_smoothed_gait.csv';
     otherwise
