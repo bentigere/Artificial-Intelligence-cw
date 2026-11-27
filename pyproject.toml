@@ -6,10 +6,15 @@ readme = "README.md"
 authors = [
     { name = "Kurei999999", email = "krain.ss@icloud.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.11,<3.13"
 dependencies = [
-    "numpy>=2.5.4",
+    "numpy>=2.4,<3",
     "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+comparison = [
+    "torch>=2.15,<3",
 ]
 
 [project.scripts]
