@@ -12,9 +12,9 @@ def test_matlab_gait_export():
     """Validate the GA output used by MATLAB."""
 
     project_root = Path(__file__).resolve().parent.parent
-    gait_path = project_root / "data" / "best_gait.csv"
+    gait_path = project_root / "data" / "best_gait_matlab.csv"
 
-    assert gait_path.exists(), "best_gait.csv not found"
+    assert gait_path.exists(), f"Missing MATLAB gait: {gait_path}"
 
     gait = np.loadtxt(gait_path, delimiter=",")
 

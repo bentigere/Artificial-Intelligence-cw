@@ -3,11 +3,9 @@ from controller import Robot
 from pathlib import Path
 import csv
 
-# Initialize Webots
 robot = Robot()
 TIME_STEP = int(robot.getBasicTimeStep())
 
-# Enable GPS
 gps = robot.getDevice("gps")
 if gps is None:
     raise RuntimeError("GPS sensor not found")
@@ -17,7 +15,7 @@ gps.enable(TIME_STEP)
 LEGS = ["L1", "L2", "L3", "L4", "R4", "R3", "R2", "R1"]
 JOINTS = ["hip_joint", "thigh_joint", "knee_joint"]
 
-# Standing pose
+# The Webots model mirrors the thigh and knee axes on the right.
 LEFT_POSE = [0.0, -1.07, 0.58]
 RIGHT_POSE = [0.0, 1.07, -0.58]
 STANDING_POSE = LEFT_POSE * 4 + RIGHT_POSE * 4
@@ -25,7 +23,6 @@ STANDING_POSE = LEFT_POSE * 4 + RIGHT_POSE * 4
 STEPS_PER_FRAME = 2
 TRANSITION_STEPS = 100
 
-# Find all 24 motors
 motors = []
 
 for leg in LEGS:
@@ -60,7 +57,6 @@ def apply_pose(angles):
         motor.setPosition(safe_angle)
 
 
-# Load gait CSV
 csv_path = Path(__file__).with_name("spider_gait.csv")
 
 print(f"Loading gait from: {csv_path}", flush=True)
@@ -72,7 +68,6 @@ with open(csv_path, newline="") as file:
         if row
     ]
 
-# Validate gait
 if len(gait) != 300 or any(len(frame) != 24 for frame in gait):
     raise ValueError(
         "The gait CSV must contain 300 rows and 24 columns"
@@ -80,14 +75,13 @@ if len(gait) != 300 or any(len(frame) != 24 for frame in gait):
 
 print("Loaded 300 gait frames successfully", flush=True)
 
-# Move to standing position
 apply_pose(STANDING_POSE)
 
 for _ in range(50):
     if robot.step(TIME_STEP) == -1:
         raise SystemExit
 
-# Smooth transition to first gait frame
+# Blend from standing so the motors do not jump to frame 1.
 for step in range(TRANSITION_STEPS):
     alpha = (step + 1) / TRANSITION_STEPS
 
@@ -101,14 +95,12 @@ for step in range(TRANSITION_STEPS):
     if robot.step(TIME_STEP) == -1:
         raise SystemExit
 
-# Record initial GPS position
 start_position = list(gps.getValues())
 start_time = robot.getTime()
 
 print("Starting GA gait evaluation", flush=True)
 print("Starting position:", start_position, flush=True)
 
-# Results file
 results_path = Path(__file__).with_name("gait_results.csv")
 
 NUM_CYCLES = 3
@@ -136,24 +128,17 @@ with open(results_path, "w", newline="") as file:
         frame_number = step % len(gait)
         cycle_number = step // len(gait) + 1
 
-        # Apply the selected gait frame
         apply_pose(gait[frame_number])
 
         for _ in range(STEPS_PER_FRAME):
             if robot.step(TIME_STEP) == -1:
                 raise SystemExit
 
-        # Read GPS measurements
         x, y, z = gps.getValues()
 
-        # Signed movement along each horizontal axis
         dx = x - start_position[0]
         dy = y - start_position[1]
-
-        # Total horizontal displacement
         displacement = (dx**2 + dy**2)**0.5
-
-        # Vertical change relative to start
         height_change = z - start_position[2]
         height_samples.append(z)
 
@@ -182,7 +167,6 @@ with open(results_path, "w", newline="") as file:
                 flush=True
             )
 
-# Calculate stability statistics
 average_height = sum(height_samples) / len(height_samples)
 
 height_variation = (

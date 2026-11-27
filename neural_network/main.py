@@ -1,121 +1,52 @@
+"""Train and evaluate a fresh NumPy model in its own run directory."""
+
+import argparse
 import json
 from pathlib import Path
-
-import numpy as np
+from tempfile import mkdtemp
 
 from neural_network.dataset import load_datasets
+from neural_network.export_final import GA_TARGET, evaluate_cycle, export_gait
 from neural_network.network import NeuralNetwork
-from neural_network.train import (
-    train,
-    to_arrays,
-    save_model,
-    save_history,
-)
-from neural_network.updated_evaluate import (
-    updated_evaluate,
-    phase_inputs,
-    validate_gait,
-    cycle_metrics,
-)
+from neural_network.train import EPOCHS, SEED, save_history, save_model, to_arrays, train
 from neural_network.visualisation import create_evaluation_plots
 
 
-def main():
-    project_root = Path(__file__).resolve().parent.parent
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument("--output-dir", type=Path, help="A new directory for this run")
+    args = parser.parse_args(argv)
+    if args.epochs < 1:
+        parser.error("--epochs must be positive")
 
-    dataset_path = project_root / "data/best_gait_matlab.csv"
-    model_path = project_root / "models/spider_nn.npz"
-    history_path = project_root / "data/nn_training_history.csv"
-    metrics_path = project_root / "data/nn_evaluation_metrics.json"
-    prediction_path = project_root / "data/nn_predicted_gait.csv"
-    plots_dir = project_root / "images/nn"
+    if args.output_dir is None:
+        runs = Path("runs/nn")
+        runs.mkdir(parents=True, exist_ok=True)
+        output_dir = Path(mkdtemp(prefix="demo-", dir=runs))
+    else:
+        output_dir = args.output_dir
+        output_dir.mkdir(parents=True)
 
-    # Training settings
-    layer_sizes = (2, 64, 128, 64, 24)
-    learning_rate = 0.001
-    batch_size = 32
-    epochs = 500
-    seed = 42
-
-    # Prepare data.
-    train_data, val_data, test_data = load_datasets(dataset_path)
-
+    train_data, val_data, _ = load_datasets(GA_TARGET)
     X_train, y_train = to_arrays(train_data)
     X_val, y_val = to_arrays(val_data)
-    X_test, y_test = to_arrays(test_data)
+    model = NeuralNetwork(seed=SEED)
+    history = train(model, X_train, y_train, X_val, y_val, epochs=args.epochs)
+    save_model(model, output_dir / "model.npz")
+    save_history(history, output_dir / "history.csv")
 
-    model = NeuralNetwork(layer_sizes=layer_sizes, seed=seed)
-
-    # Train and restore the best validation model.
-    print("Training...")
-
-    history = train(
-        model,
-        X_train,
-        y_train,
-        X_val,
-        y_val,
-        learning_rate=learning_rate,
-        batch_size=batch_size,
-        epochs=epochs,
-        seed=seed,
+    predictions, targets, metrics = evaluate_cycle(model, GA_TARGET)
+    (output_dir / "metrics.json").write_text(
+        json.dumps(metrics, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
+    create_evaluation_plots(predictions, targets, history, output_dir / "plots")
 
-    # Save the best model
-    save_model(model, model_path)
-    # Save the entire history
-    save_history(history, history_path)
-
-    # Evaluate each split separately.
-    metrics = {
-        "train": updated_evaluate(model, X_train, y_train),
-        "validation": updated_evaluate(model, X_val, y_val),
-        "test": updated_evaluate(model, X_test, y_test),
-    }
-
-    for name, result in metrics.items():
-        print(f"{name}: " f"MSE={result['mse']:.6f}, " f"MAE={result['mae']:.6f}")
-
-    # Predict the full gait in its original frame order.
-    X_all = phase_inputs()
-    y_all = np.loadtxt(dataset_path, delimiter=",")
-    predictions = model.predict(X_all)
-
-    metrics["all"] = updated_evaluate(model, X_all, y_all)
-    metrics["joint_validation"] = validate_gait(predictions)
-    metrics["prediction_cycle"] = cycle_metrics(predictions)
-    metrics["target_cycle"] = cycle_metrics(y_all)
-
-    metrics_path.parent.mkdir(parents=True, exist_ok=True)
-    metrics_path.write_text(
-        json.dumps(metrics, indent=2, allow_nan=False) + "\n",
-        encoding="utf-8",
-    )
-
-    create_evaluation_plots(
-        predictions,
-        y_all,
-        history,
-        plots_dir,
-    )
-
-    # Export for MATLAB only when all predicted angles are valid.
-    if not metrics["joint_validation"]["valid"]:
-        raise ValueError(
-            "Predictions violate joint limits. "
-            "Metrics and plots were saved; gait CSV was not exported."
-        )
-
-    prediction_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savetxt(
-        prediction_path,
-        predictions,
-        delimiter=",",
-        fmt="%.17g",
-    )
-
-    print(f"Model saved to: {model_path}")
-    print(f"Predicted gait saved to: {prediction_path}")
+    for split in ("train", "validation", "test"):
+        result = metrics[split]
+        print(f"{split}: MSE={result['mse']:.6f}, MAE={result['mae']:.6f}")
+    print(f"Model, metrics and plots saved to {output_dir}")
+    export_gait(predictions, output_dir / "predicted_gait.csv")
 
 
 if __name__ == "__main__":

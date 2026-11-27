@@ -25,7 +25,7 @@ def updated_mutate(
     if not 3 <= bump_frames <= frames:
         raise ValueError("Invalid number of bump frames.")
 
-    # A smooth bump: zero at both ends, highest near the middle.
+    # Taper the change to zero at both ends of the window.
     bump = np.sin(np.linspace(0, np.pi, bump_frames)) ** 2
     bump[0] = bump[-1] = 0.0
 
@@ -34,12 +34,11 @@ def updated_mutate(
             start = random.randrange(frames)
             amount = random.gauss(0, mutation_strength)
 
-            # Continue at frame 0 if we pass the last frame.
+            # Let the mutation cross the end of the cycle.
             indices = (start + np.arange(bump_frames)) % frames
 
             gait[indices, joint] += amount * bump
 
-    # Keep every joint within its bounds.
     gait = np.clip(gait, LOWER_LIMITS, UPPER_LIMITS)
 
     return gait.flatten().tolist()

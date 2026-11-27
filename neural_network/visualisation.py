@@ -17,8 +17,7 @@ from genetic_algorithm.chromosome import (
     NUM_FRAMES,
 )
 
-# Checks that the prediction, target and training data are valid
-# before generating evaluation graphs.
+
 def _validate_inputs(predictions, targets, history):
     predictions = np.asarray(predictions, dtype=float)
     targets = np.asarray(targets, dtype=float)
@@ -61,14 +60,13 @@ def _save(figure, path):
     figure.savefig(path, dpi=150, facecolor="white")
     figure.clear()
 
-# Training loss shows convergence, joint predictions show how closely
-# the NN follows the GA gait, and error plots highlight weaker joints.
+
 def create_evaluation_plots(predictions, targets, history, output_dir):
-    """Write the three required PNGs and return their paths.
+    """Save prediction, joint error and loss figures and return their paths.
 
     ``predictions`` and ``targets`` must each be finite 300-by-24 arrays in
     ``LEG_ORDER``/``JOINT_ORDER``. ``history`` has one row per recorded epoch
-    with columns ``epoch, train_mse, val_mse``. No figures are shown on screen.
+    with columns ``epoch, train_mse, val_mse``.
     """
     predictions, targets, history = _validate_inputs(predictions, targets, history)
     with np.errstate(over="ignore", invalid="ignore"):
@@ -86,7 +84,6 @@ def create_evaluation_plots(predictions, targets, history, output_dir):
         "training_loss": output_dir / "nn_training_loss.png",
     }
 
-    # Keep every joint visible rather than selecting only a favourable example.
     figure = _figure((13, 20))
     axes = figure.subplots(len(LEG_ORDER), len(JOINT_ORDER), sharex=True)
     phases = np.arange(NUM_FRAMES) / NUM_FRAMES

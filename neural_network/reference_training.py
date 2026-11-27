@@ -1,9 +1,4 @@
-"""Reproduce a reference checkpoint for evaluation using the team's trainer.
-
-This is an evaluation reference, not a claim that the team has selected its
-final model. The network, split and backpropagation implementations are reused
-without modification; test samples are not used in training.
-"""
+"""Repeat the NumPy training run and record its inputs and outputs."""
 
 import argparse
 import hashlib
@@ -33,12 +28,11 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def _source_main_commit():
-    """Record the checkout's main baseline when Git is available."""
+def _source_commit():
+    """Record the current checkout revision when Git is available."""
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "origin/main"],
-            cwd=Path(__file__).resolve().parent.parent,
+            ["git", "rev-parse", "HEAD"],
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
@@ -49,9 +43,9 @@ def _source_main_commit():
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", type=Path, default=Path("data/best_gait_matlab.csv"))
-    parser.add_argument("--model", type=Path, default=Path("data/nn_reference_model.npz"))
-    parser.add_argument("--history", type=Path, default=Path("data/nn_training_history.csv"))
-    parser.add_argument("--provenance", type=Path, default=Path("data/nn_reference_training.json"))
+    parser.add_argument("--model", type=Path, default=Path("runs/nn/reference/model.npz"))
+    parser.add_argument("--history", type=Path, default=Path("runs/nn/reference/history.csv"))
+    parser.add_argument("--provenance", type=Path, default=Path("runs/nn/reference/training.json"))
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE)
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
@@ -79,7 +73,7 @@ def main(argv=None):
 
     package_dir = Path(__file__).resolve().parent
     provenance = {
-        "label": "Reference checkpoint trained for evaluation; not the team's final selected model.",
+        "label": "Reproduction training run",
         "seed": args.seed,
         "dataset_split_seed": 42,
         "epochs": args.epochs,
@@ -92,7 +86,7 @@ def main(argv=None):
         "model_sha256": _sha256(args.model),
         "history_path": str(args.history),
         "history_sha256": _sha256(args.history),
-        "source_main_commit": _source_main_commit(),
+        "source_commit": _source_commit(),
         "source_sha256": {name: _sha256(package_dir / name)
                           for name in ("network.py", "dataset.py", "train.py")},
         "python_version": platform.python_version(),
@@ -106,7 +100,7 @@ def main(argv=None):
     }
     args.provenance.parent.mkdir(parents=True, exist_ok=True)
     args.provenance.write_text(json.dumps(provenance, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(f"Saved evaluation reference checkpoint: {args.model}")
+    print(f"Saved reproduction checkpoint: {args.model}")
     print(f"Final training MSE: {history[-1, 1]:.10g}; validation MSE: {history[-1, 2]:.10g} rad^2")
 
 
