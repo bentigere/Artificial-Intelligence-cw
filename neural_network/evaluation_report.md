@@ -136,7 +136,46 @@ MATLAB animation demonstrates joint movement but does not independently establis
 
 Periodic smoothing improves movement continuity but may also change the detailed joint trajectories.
 
-## 7. Conclusion
+## 7. Comparison with PyTorch
+
+A PyTorch Neural Network was implemented to compare a standard
+deep-learning library with the NumPy network developed from scratch.
+
+Both implementations used the same 2-64-128-64-24 architecture,
+initial weights, dataset split, training batches, learning rate
+and 2,000 training epochs.
+
+The NumPy model calculates gradients manually using backpropagation,
+whereas PyTorch uses automatic differentiation (autograd).
+
+### Comparison Results
+
+| Metric          |      NumPy |    PyTorch |
+| --------------- | ---------: | ---------: |
+| Test MSE (rad²) | 0.00511563 | 0.00511563 |
+| Test MAE (rad)  | 0.05726265 | 0.05726265 |
+
+The maximum absolute difference between test predictions was
+8.88 × 10^-16, while the maximum difference between corresponding
+model parameters was 2.22 × 10^-16.
+
+These differences are negligible and show that the two implementations
+produce numerically equivalent predictions under identical
+training conditions.
+
+This provides numerical evidence supporting the correctness of
+the NumPy implementation and its manual backpropagation calculations.
+
+However, the comparison does not establish that the network can
+generalise to different walking patterns or environments.
+
+The comparison script is `neural_network/pytorch_comparison.py`,
+and its results are saved in:
+
+- `data/pytorch_comparison.json`
+- `data/pytorch_comparison_history.csv`
+
+## 8. Conclusion
 
 The final Neural Network successfully approximated the optimised GA-generated gait, achieving a held-out test MSE of **0.00511563 rad²** and outperforming the constant-pose baseline.
 
