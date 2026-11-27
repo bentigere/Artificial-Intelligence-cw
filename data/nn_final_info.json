@@ -1,6 +1,5 @@
 {
-  "label": "Reference checkpoint trained for evaluation; not the team's final selected model.",
-  "seed": 42,
+  "label": "Final Neural Network checkpoint trained for 2000 epochs and used for gait evaluation.",  "seed": 42,
   "dataset_split_seed": 42,
   "epochs": 2000,
   "learning_rate": 0.001,
