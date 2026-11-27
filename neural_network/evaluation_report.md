@@ -41,6 +41,21 @@ Additional experiment files:
 - `data/nn_final_gait.csv` - raw NN predictions.
 - `data/nn_final_smoothed_gait.csv` - periodically smoothed predictions.
 
+### 2.1 Reproducibility Verification
+
+The final Neural Network experiment was reproduced using the same GA
+dataset, architecture, random seed, learning rate, batch size and
+2,000 training epochs.
+
+The reproduced checkpoint contained exactly the same parameter arrays
+as the final saved model. The training histories were also identical,
+with a maximum numerical difference of 0.0.
+
+This confirms that the final experiment is reproducible under the
+tested software environment and configuration.
+
+python -m neural_network.reference_training --target data/best_gait_matlab.csv --model data/nn_reproduction_model.npz --history data/nn_reproduction_history.csv --provenance data/nn_reproduction_info.json --epochs 2000 --learning-rate 0.001 --batch-size 32 --seed 42
+
 ## 3. Evaluation Results
 
 | Dataset    | MSE (rad²) |
