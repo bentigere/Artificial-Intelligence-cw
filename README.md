@@ -146,3 +146,51 @@ uv run python -m neural_network.main
 ```
 
 **Note:** The commands above run the repository's NN entry point. The saved `nn_final_*` files document the separately completed final experiment, running the entry point does not necessarily reproduce those exact files or settings.
+
+### Reproducing the Final Neural Network Experiment
+
+The final Neural Network was trained for 2,000 epochs using the
+GA-generated gait in `data/best_gait_matlab.csv`.
+
+To reproduce the experiment, run the following command from
+the project root:
+
+```powershell
+python -m neural_network.reference_training --target data/best_gait_matlab.csv --model data/nn_reproduction_model.npz --history data/nn_reproduction_history.csv --provenance data/nn_reproduction_info.json --epochs 2000 --learning-rate 0.001 --batch-size 32 --seed 42
+```
+
+This command reproduces training using the same dataset, architecture,
+random seed, batch size and learning rate as the final experiment.
+
+The reproduced model and training history were verified to match
+the final saved model exactly, with a maximum history difference
+of 0.0.
+
+The command saves its results to separate files so the original
+`data/nn_final_model.npz` and `data/nn_final_history.csv`
+are not overwritten.
+
+### Optional PyTorch Comparison
+
+To install the optional PyTorch dependency:
+
+```powershell
+python -m pip install ".[comparison]"
+```
+
+To run the library comparison:
+
+```powershell
+python -m neural_network.pytorch_comparison
+```
+
+This compares the NumPy implementation developed from scratch
+with a PyTorch implementation using the same architecture,
+initial weights, training batches and hyperparameters.
+
+The comparison results are saved in:
+
+- `data/pytorch_comparison.json`
+- `data/pytorch_comparison_history.csv`
+
+Both implementations achieved numerically equivalent test results.
