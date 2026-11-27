@@ -2,7 +2,7 @@
 
 Run from repository root:
     python -m neural_network.pytorch_comparison
-This creates comparison evidence only; it does not overwrite the final NN.
+The comparison saves its metrics and training history separately.
 """
 
 import argparse
@@ -47,7 +47,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=2000)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--output", type=Path, default=Path("data/pytorch_comparison.json"))
+    parser.add_argument("--output", type=Path, default=Path("runs/nn/pytorch_comparison.json"))
     args = parser.parse_args()
     if args.epochs < 1 or args.batch_size < 1 or args.learning_rate <= 0:
         parser.error("Epochs, batch size, and learning rate must be positive")
@@ -68,7 +68,7 @@ def main():
             layer.weight.copy_(torch.from_numpy(weight.T))
             layer.bias.copy_(torch.from_numpy(bias.ravel()))
 
-    # Use the same SGD learning rate, minibatches, shuffling, and validation rule.
+    # Match the NumPy training setup with the default options.
     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
     shuffle_rng = random.Random(42)
     best_val = float("inf")
@@ -83,7 +83,7 @@ def main():
             batch = indices[start:start + args.batch_size]
             optimizer.zero_grad()
             loss = torch.mean((model(x_train[batch]) - y_train[batch]) ** 2)
-            loss.backward()  # PyTorch autograd replaces manual chain-rule code.
+            loss.backward()
             optimizer.step()
 
         model.eval()
@@ -99,7 +99,6 @@ def main():
     with torch.no_grad():
         torch_prediction = model(x_test).numpy()
 
-    # Both models are scored using exactly the same held-out examples.
     numpy_model = load_model("data/nn_final_model.npz")
     numpy_prediction = numpy_model.predict(x_test_np)
 

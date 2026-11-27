@@ -1,19 +1,4 @@
-
-"""Fitness evaluation for the Genetic Algorithm's spider walking gaits.
-
-This module evaluates how effectively a candidate gait coordinates the
-spider's eight legs. Forward kinematics converts joint angles into foot
-positions, which are compared against desired walking behaviour.
-
-The Genetic Algorithm can generate imperfect movements. Instead of
-rejecting every candidate with movement errors, the fitness function
-penalises poor ground contact, ground penetration, insufficient foot
-clearance, inaccurate horizontal movement and abrupt joint movements.
-
-The combined penalty becomes a fitness score. Lower penalties result
-in higher fitness, allowing the GA to favour better walking patterns
-over successive generations.
-"""
+"""Score candidate gaits using ground contact, foot trajectories and joint smoothness."""
 
 import numpy as np
 
@@ -25,9 +10,9 @@ LEG_NAMES = ["L1", "L2", "L3", "L4", "R4", "R3", "R2", "R1"]
 BASE_ANGLES = np.deg2rad([45, 75, 105, 135, -135, -105, -75, -45])
 SEGMENT_LENGTHS = [1.2, 0.7, 1.0]
 
-# Black-bar intervals: percentages of the cycle spent supporting.
-# start and end
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC6935789/ figure2
+# Support intervals are read from the black bars in Figure 2.
+# Each pair gives the start and end as percentages of the gait cycle.
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC6935789/
 SUPPORT_INTERVALS = {
     "L1": [(0, 67)],
     "L2": [(0, 20), (51, 100)],
@@ -94,32 +79,25 @@ def get_ground_z(reference_pose, tolerance=1e-6):
 
 def ground_penetration_penalty(foot_positions, ground_z):
     """Return mean squared penetration below the ground plane."""
-
-    # extracts 300 * 8 array of foot heights
     heights = foot_positions[:, :, 2] - ground_z
 
-    # above ground → 0; below ground → positive penetration depth.
+    # Only feet below the ground plane contribute to this penalty.
     penetration = np.maximum(0.0, -heights)
 
-    # average squared penetration across all feet and frames;
-    # deeper or more frequent ground penetration gives a larger penalty.
     return float(np.mean(penetration**2))
 
 
 def smoothness_penalty(gait):
     """Penalize abrupt changes in joint angles over a repeating cycle."""
-
     # Include the transition from the last frame back to the first.
     previous = np.roll(gait, 1, axis=0)
     following = np.roll(gait, -1, axis=0)
 
-    # measure the difference between the upcoming movement and the previous movement.
     previous_change = gait - previous
     next_change = following - gait
-    # (next angle − current angle) − (current angle − previous angle)
+    # The second difference measures the change in movement between frames.
     acceleration = next_change - previous_change
 
-    # Larger changes in movement produce a larger penalty.
     return float(np.mean(acceleration**2))
 
 
@@ -154,14 +132,11 @@ def support_height_penalty(foot_positions, ground_z, support_schedule):
     """Penalize distance from ground during expected support phases."""
     heights = foot_positions[:, :, 2] - ground_z
 
-    # Select only feet and frames where support is expected.
     support_heights = heights[support_schedule]
 
-    # Feet at ground level give zero error.
     return float(np.mean(support_heights**2))
 
 
-# add swing penalty prevents legs from staying on the ground all time
 def swing_clearance_penalty(foot_positions, ground_z, support_schedule, clearance=0.05):
     """Compare swing heights with a smooth lifting-and-lowering target."""
     heights = foot_positions[:, :, 2] - ground_z
@@ -169,12 +144,10 @@ def swing_clearance_penalty(foot_positions, ground_z, support_schedule, clearanc
 
     target_heights = np.zeros_like(heights)
 
-    # identify when each leg swings
     for leg in range(legs):
         swinging = ~support_schedule[:, leg]
 
-        # Find transitions from support to swing.
-        # np.roll also checks the boundary between the last and first frame.
+        # Find support-to-swing transitions, including the end of the cycle.
         swing_starts = np.flatnonzero(swinging & ~np.roll(swinging, 1))
 
         if np.all(swinging):
@@ -194,7 +167,6 @@ def swing_clearance_penalty(foot_positions, ground_z, support_schedule, clearanc
 
             target_heights[indices, leg] = clearance * np.sin(np.pi * progress) ** 2
 
-    # Compare actual and target heights only during swing.
     errors = (heights - target_heights)[~support_schedule]
 
     if errors.size == 0:
@@ -203,7 +175,6 @@ def swing_clearance_penalty(foot_positions, ground_z, support_schedule, clearanc
     return float(np.mean(errors**2))
 
 
-# penalizing only vertical movements makes the spider movements up and down
 def create_horizontal_targets(support_schedule, step_length=0.2):
     """Create target X coordinates for all frames and feet."""
     frames, legs = support_schedule.shape
@@ -234,7 +205,7 @@ def create_horizontal_targets(support_schedule, step_length=0.2):
 
                 progress = (np.arange(len(indices)) + 0.5) / len(indices)
 
-                # Smooth progress from 0 to 1.
+                # Ease in and out with a cubic smoothstep.
                 progress = 3 * progress**2 - 2 * progress**3
 
                 if is_support:
@@ -256,30 +227,7 @@ def horizontal_movement_penalty(foot_positions, target_x):
 
 
 def fitness_function(chromosome, ground_z):
-    """Evaluate a complete spider gait using weighted movement penalties.
-
-    Each chromosome represents a candidate walking cycle containing
-    joint angles for the spider's eight legs. The fitness function
-    uses forward kinematics to determine foot positions and compares
-    the resulting movement with the desired walking behaviour.
-
-    Imperfect gaits are penalised rather than immediately rejected.
-    Penalties measure poor support height, ground penetration,
-    insufficient swing clearance, inaccurate horizontal movement
-    and abrupt changes in joint angles.
-
-    The penalties are weighted and combined into a single negative
-    fitness score. Higher scores indicate better gait quality and
-    help the GA select stronger candidates for reproduction.
-
-    Args:
-        chromosome: Encoded candidate spider gait.
-        ground_z: Ground-plane height used to evaluate foot positions.
-
-    Returns:
-        float: Negative weighted penalty score. A score closer
-        to zero indicates fewer measured gait errors.
-    """
+    """Return the negative weighted penalty, with higher scores preferred."""
     gait = chromosome_to_gait(chromosome)
     foot_positions = get_gait_foot_positions(chromosome)
 
@@ -290,37 +238,18 @@ def fitness_function(chromosome, ground_z):
     penetration = ground_penetration_penalty(foot_positions, ground_z)
 
     smoothness = smoothness_penalty(gait)
-    """Penalise abrupt changes in joint movement across a gait cycle.
-
-    Measures squared second differences in consecutive joint angles,
-    including the transition from the last frame to the first.
-    This encourages gradual motion and avoids sudden changes in
-    movement between frames.
-    """
     swing = swing_clearance_penalty(foot_positions, ground_z, schedule, clearance=0.15)
-    """Evaluate whether swinging feet follow the intended lifting path.
-
-    Compares each swinging foot's height with a smooth target
-    trajectory that rises and falls during the swing phase.
-    This discourages the spider from keeping its feet on the
-    ground throughout the entire walking cycle.
-    """
     target_x = create_horizontal_targets(schedule, step_length=0.8)
 
     horizontal = horizontal_movement_penalty(foot_positions, target_x)
-    """Penalise deviations from the target horizontal foot trajectories.
 
-    Compares each foot's X coordinate with the desired position
-    during its walking cycle. This encourages coordinated forward
-    and backward foot movement rather than only vertical lifting.
-    """
     # Acceptable position errors, in the same units as foot coordinates.
     support_tolerance = 0.03
     penetration_tolerance = 0.01
     swing_tolerance = 0.02
     horizontal_tolerance = 0.05
 
-    # Each position penalty is already a mean squared error.
+    # Scale squared position errors by the squared tolerances.
     total_penalty = (
         1.0 * support / support_tolerance**2
         + 1.0 * swing / swing_tolerance**2
@@ -334,5 +263,3 @@ def fitness_function(chromosome, ground_z):
 
 if __name__ == "__main__":
     ground_z = get_ground_z(MATLAB_STANDING_POSE)
-
-    # scores = [fitness_function(chromosome, ground_z) for chromosome in population]

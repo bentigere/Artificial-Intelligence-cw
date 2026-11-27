@@ -1,4 +1,4 @@
-# converted Artificial-Intelligence-cw/forward_leg_kinematics2.m into Python
+"""Python port of the supplied forward_leg_kinematics2.m."""
 
 import numpy as np
 

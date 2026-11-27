@@ -1,18 +1,4 @@
-
-"""Population management for the spider gait Genetic Algorithm.
-
-A population is a collection of candidate spider walking gaits.
-Each chromosome represents a complete walking cycle containing
-300 frames and 24 joint angles per frame.
-
-The initial population provides different candidate movements
-for the Genetic Algorithm to evaluate. The fitness function
-penalises movement errors, allowing selection and genetic
-operators to favour better walking patterns over generations.
-
-This module supports the creation and management of candidate
-solutions during the optimisation process.
-"""
+"""Seed the GA with periodic gaits around a reference standing pose."""
 
 import numpy as np
 
@@ -37,30 +23,24 @@ MATLAB_REFERENCE_POSE = [0.0, -np.pi / 4, -np.pi / 3]
 STANDING_POSE = np.array(LEFT_POSE * 4 + RIGHT_POSE * 4)
 MATLAB_STANDING_POSE = np.tile(MATLAB_REFERENCE_POSE, 8)
 
-# Alternating leg phases
-
-# Required spider leg order
 LEGS = ["L1", "L2", "L3", "L4", "R4", "R3", "R2", "R1"]
 
-# Two alternating groups of four legs
+# The two leg groups start half a cycle apart.
 GROUP_A = {"L1", "L3", "R4", "R2"}
 GROUP_B = {"L2", "L4", "R3", "R1"}
 
-# Opposite movement phases
 LEG_PHASES = [0.0 if leg in GROUP_A else np.pi for leg in LEGS]
 
 
 def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
-    """Creates a random, smooth walking gait around the reference pose."""
+    """Generate a periodic walking gait around the reference pose."""
     reference_pose = np.asarray(reference_pose, dtype=float)
 
     if reference_pose.shape != (ANGLES_PER_FRAME,):
         raise ValueError("Expected 24 reference joint angles")
 
-    # One complete periodic gait cycle
     time = np.linspace(0, 2 * np.pi, NUM_FRAMES, endpoint=False)
 
-    # Start from the chosen standing pose
     gait = np.tile(reference_pose, (NUM_FRAMES, 1))
 
     for leg in range(8):
@@ -68,7 +48,6 @@ def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
         phase = LEG_PHASES[leg]
         start = leg * 3
 
-        # Small variations between chromosomes
         hip_amplitude = rng.uniform(0.10, 0.20)
         thigh_amplitude = rng.uniform(0.08, 0.16)
         knee_amplitude = rng.uniform(0.06, 0.12)
@@ -88,14 +67,14 @@ def create_smooth_chromosome(rng, reference_pose=STANDING_POSE):
         gait[:, start + 1] += thigh_movement
         gait[:, start + 2] += knee_movement
 
-    # Respect robot joint limits
+    # Leave a small margin at the joint limits.
     gait = np.clip(gait, LOWER_LIMITS + 0.001, UPPER_LIMITS - 0.001)
 
     return gait.flatten()
 
 
 def create_population(size=POPULATION_SIZE, reference_pose=STANDING_POSE):
-    """Creates the initial population of spider gaits for the GA."""
+    """Generate the initial population using a reproducible seed."""
     rng = np.random.default_rng(42)
 
     population = []
@@ -110,7 +89,6 @@ def create_population(size=POPULATION_SIZE, reference_pose=STANDING_POSE):
 
 if __name__ == "__main__":
 
-    # Test MATLAB population initialization
     population = create_population(reference_pose=MATLAB_STANDING_POSE)
 
     first_gait = chromosome_to_gait(population[0])

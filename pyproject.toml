@@ -1,28 +1,28 @@
 [project]
 name = "artificial-intelligence-cw"
 version = "0.1.0"
-description = "Add your description here"
+description = "Genetic algorithm and neural network for an eight-legged spider gait"
 readme = "README.md"
 authors = [
     { name = "Kurei999999", email = "krain.ss@icloud.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.11,<3.15"
 dependencies = [
-    "numpy>=2.5.4",
-    "matplotlib>=3.8",
+    "numpy>=2.4,<3",
+    "matplotlib>=3.9,<4",
+    "pandas>=2.3.3,<4",
 ]
 
-[project.scripts]
-artificial-intelligence-cw = "artificial_intelligence_cw:main"
+[project.optional-dependencies]
+comparison = ["torch>=2.15,<3"]
+test = ["pytest>=8"]
 
 [build-system]
-requires = ["uv_build>=0.13.7,<0.14.0"]
-build-backend = "uv_build"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
-[tool.uv]
-package = false
+[tool.setuptools]
+packages = ["genetic_algorithm", "neural_network"]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.2.0",
-]
+dev = ["artificial-intelligence-cw[test]"]
