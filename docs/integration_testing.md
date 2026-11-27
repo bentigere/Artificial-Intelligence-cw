@@ -38,7 +38,7 @@ The generated `data/fitness_history.csv` file was used to plot the best and aver
 
 The fitness graph shows an overall improvement in both scores, indicating that the GA improved its evaluated candidate solutions during optimisation.
 
-Because the GA uses randomised operations, individual runs may produce slightly different fitness histories and final scores.
+The GA uses randomised operations with fixed seeds (`random.seed(42)` and `np.random.default_rng(42)`), so repeated runs with the same code, parameters and environment are reproducible. Fitness histories and final scores may change if the seeds, parameters or environment change.
 
 **3. Validate the generated gait**
 
