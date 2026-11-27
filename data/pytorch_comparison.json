@@ -1,0 +1,21 @@
+{
+  "method": "Matched architecture, initial weights, data split, SGD, minibatches and seed; PyTorch autograd vs NumPy manual backpropagation",
+  "pytorch_version": "2.15.0+cpu",
+  "epochs": 2000,
+  "learning_rate": 0.001,
+  "batch_size": 32,
+  "numpy_final": {
+    "test_mse_rad2": 0.005115634728259383,
+    "test_mae_rad": 0.0572626480708486
+  },
+  "pytorch": {
+    "test_mse_rad2": 0.005115634728259382,
+    "test_mae_rad": 0.05726264807084859
+  },
+  "max_absolute_test_prediction_difference": 8.881784197001252e-16,
+  "max_absolute_parameter_difference": 2.220446049250313e-16,
+  "pytorch_best_validation_mse_rad2": 0.0054309437264716525,
+  "pytorch_final_training_mse_rad2": 0.004903527788684958,
+  "pytorch_final_validation_mse_rad2": 0.0054309437264716525,
+  "note": "The NumPy checkpoint is from 2000 epochs. Use --epochs 2000 for an equal-training comparison. Test data are not used for training or checkpoint selection."
+}
